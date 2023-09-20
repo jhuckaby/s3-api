@@ -1,0 +1,17 @@
+{
+	"name": "s3-api",
+	"version": "1.0.0",
+	"description": "A simple, light wrapper around the AWS S3 v3 API.",
+	"main": "s3.js",
+	"author": "Joseph Huckaby",
+	"license": "MIT",
+	"dependencies": {
+		"@aws-sdk/client-s3": "3.414.0",
+		"@aws-sdk/lib-storage": "3.414.0",
+		"@smithy/node-http-handler": "2.1.4",
+		"class-plus": "^2.0.0",
+		"fast-stream-to-buffer": "1.0.0",
+		"pixl-tools": "^1.0.29",
+		"pixl-cache": "^1.0.6"
+	}
+}
