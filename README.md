@@ -1,3 +1,52 @@
+<details><summary>Table of Contents</summary>
+
+<!-- toc -->
+* [Overview](#overview)
+	* [Features](#features)
+	* [Setup](#setup)
+	* [API Usage](#api-usage)
+		+ [Key / Value Store](#key--value-store)
+			- [Caching](#caching)
+		+ [Using Files](#using-files)
+			- [Multiple Files](#multiple-files)
+			- [Compression](#compression)
+			- [Threads](#threads)
+		+ [Pinging Objects](#pinging-objects)
+		+ [Listing Objects](#listing-objects)
+		+ [Deleting Objects](#deleting-objects)
+		+ [Using Buffers](#using-buffers)
+		+ [Using Streams](#using-streams)
+		+ [Custom S3 Params](#custom-s3-params)
+	* [Logging](#logging)
+		+ [Console](#console)
+	* [Performance Tracking](#performance-tracking)
+	* [API Reference](#api-reference)
+		+ [constructor](#constructor)
+		+ [attachLogAgent](#attachlogagent)
+		+ [attachPerfAgent](#attachperfagent)
+		+ [put](#put)
+		+ [get](#get)
+		+ [head](#head)
+		+ [list](#list)
+		+ [listFolders](#listfolders)
+		+ [listBuckets](#listbuckets)
+		+ [walk](#walk)
+		+ [copy](#copy)
+		+ [move](#move)
+		+ [delete](#delete)
+		+ [uploadFile](#uploadfile)
+		+ [downloadFile](#downloadfile)
+		+ [uploadFiles](#uploadfiles)
+		+ [downloadFiles](#downloadfiles)
+		+ [deleteFiles](#deletefiles)
+		+ [putBuffer](#putbuffer)
+		+ [getBuffer](#getbuffer)
+		+ [putStream](#putstream)
+		+ [getStream](#getstream)
+- [License](#license)
+
+</details>
+
 ## Overview
 
 The **s3-api** module provides a simple, light wrapper around the AWS S3 API (version 3).  It greatly simplifies things like uploading and downloading files to/from S3, as well as treating it like a key/value store.
