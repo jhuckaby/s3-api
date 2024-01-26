@@ -1,63 +1,61 @@
 // Simple wrapper around AWS S3 API v3
-// Copyright (c) 2023 Joseph Huckaby, MIT License
+// Copyright (c) 2023 - 2024 Joseph Huckaby, MIT License
+
+"use strict";
 
 const fs = require('fs');
-const os = require('os');
 const zlib = require('zlib');
 const Path = require('path');
-const Class = require('class-plus');
 const Tools = require('pixl-tools');
 const LRU = require('pixl-cache');
 const { Readable } = require('stream');
 const streamToBuffer = require("fast-stream-to-buffer");
-
+const { asyncify } = require('pixl-class-util');
 const S3 = require("@aws-sdk/client-s3");
 const { Upload } = require("@aws-sdk/lib-storage");
 const { NodeHttpHandler } = require("@smithy/node-http-handler");
 
 const async = Tools.async;
 
-module.exports = Class({
-	__asyncify: {
-		put: ['meta'],
-		get: ['data', 'meta'],
-		head: ['meta'],
-		listFolders: ['folders', 'files'],
-		list: ['files', 'bytes'],
-		walk: [],
-		copy: ['meta'],
-		move: ['meta'],
-		delete: ['meta'],
-		uploadFile: ['meta'],
-		downloadFile: ['meta'],
-		uploadFiles: ['files'],
-		downloadFiles: ['files', 'bytes'],
-		deleteFiles: ['files', 'bytes'],
-		putBuffer: ['meta'],
-		getBuffer: ['data', 'meta'],
-		putStream: ['meta'],
-		getStream: ['data', 'meta'],
-		listBuckets: ['buckets']
-	},
-	
-	region: 'us-west-1',
-	bucket: '',
-	prefix: '',
-	params: null,
-	retries: 50,
-	timeout: 5000,
-	connectTimeout: 5000,
-	logger: null,
-	perf: null,
-	gzip: {}
-}, 
+/** 
+ * S3API class wraps the AWS S3 SDK and provides a convenient API atop it. 
+ */
 class S3API {
 	
+	region = 'us-west-1';
+	bucket = '';
+	prefix = '';
+	params = null;
+	retries = 50;
+	timeout = 5000;
+	connectTimeout = 5000;
+	logger = null;
+	perf = null;
+	gzip = {};
+	
+	/**
+	 * Construct an S3API class instance.
+	 * @param {Object} args - Arguments for configuring the S3 connection.
+	 * @param {string} args.region - The AWS region in which your S3 bucket resides.
+	 * @param {string} args.bucket - The AWS S3 Bucket name to connect to.
+	 * @param {Object} [args.credentials] - Your AWS credentials for the S3 connection.
+	 * @param {string} [args.credentials.accessKeyId] - Your AWS Access Key ID.
+	 * @param {string} [args.credentials.secretAccessKey] - Your AWS Secret Access Key.
+	 * @param {string} [args.prefix] - An option string to prefix onto all S3 paths.
+	 * @param {Object} [args.params] - Optional params to pass to the AWS SDK.
+	 * @param {string} [args.retries=50] - Optionally set the number of retries for failed operations.
+	 * @param {string} [args.timeout=5000] - Optionally set the S3 operation timeout in milliseconds.
+	 * @param {string} [args.connectTimeout=5000] - Optionally set the S3 connect timeout in milliseconds.
+	 * @param {Object} [args.logger] - Optional pixl-logger compatible log agent.
+	 * @param {Object} [args.perf] - Optional pixl-perf compatible perf tracker.
+	 * @param {Object} [args.gzip] - Optionally configure the gzip (zlib) properties.
+	 * @param {(Object|boolean)} [args.cache] - Optionally enable and configure the key/value LRU cache.
+	 */
 	constructor(args = {}) {
 		// optional: { credentials, region, bucket, prefix, params, timeout, connectTimeout, retries, logger, perf, gzip, cache }
 		Tools.mergeHashInto(this, args);
 		
-		var opts = {
+		let opts = {
 			region: this.region,
 			maxAttempts: this.retries,
 			requestHandler: new NodeHttpHandler({
@@ -77,9 +75,13 @@ class S3API {
 		if (this.cache) this.setupCache();
 	}
 	
+	/** 
+	 * Setup the LRU cache subsystem.
+	 * @private
+	 */
 	setupCache() {
 		// setup caching layer using pixl-cache
-		var self = this;
+		let self = this;
 		if (typeof(this.cache) != 'object') this.cache = {};
 		if (!this.cache.keyMatch) this.cache.keyMatch = /.+/;
 		
@@ -89,20 +91,44 @@ class S3API {
 		});
 	}
 	
+	/** 
+	 * Attach a pixl-logger compatible log agent.
+	 * @param {Object} agent - The pixl-logger instance to attach and use.
+	 */
 	attachLogAgent(agent) {
 		// attach a pixl-logger compatible agent for debug logging
 		this.logger = agent;
 	}
+	
+	/** 
+	 * Attach a pixl-perf compatible perf tracker.
+	 * @param {Object} perf - The pixl-perf instance to attach and use.
+	 */
 	attachPerfAgent(perf) {
 		// attach a pixl-perf compatible agent for perf tracking
 		this.perf = perf;
 	}
 	
+	/** 
+	 * @typedef {Object} MetaResponse
+	 * @property {Object} meta - Raw metadata object from the AWS S3 service.
+	 */
+	
+	/**
+	 * Serialize object to JSON and store as buffer, acting as a key/value store.
+	 * @param {Object} opts - The options object for the put operation.
+	 * @param {string} opts.key - The key (S3 path) to store the object under.
+	 * @param {Object} opts.value - The value to store as the object content.
+	 * @param {string} [opts.bucket] - Optionally override the S3 bucket.
+	 * @param {Object} [opts.params] - Optionally specify parameters to the S3 API, for e.g. ACL and Storage Class. 
+	 * @param {boolean} [opts.pretty=false] - Optionally pretty-print the JSON.
+	 * @returns {Promise<MetaResponse>} - A promise that resolves to a custom object.
+	 */
 	put(opts, callback) {
 		// serialize object to JSON and store as buffer
 		// opts: { bucket, key, value, pretty, params }
 		// result: { metadata }
-		var self = this;
+		let self = this;
 		if (!opts.value) return callback( new Error("Missing required 'value' (object) property.") );
 		if (typeof(opts.value) != 'object') return callback( new Error("The 'value' property must be an object.") );
 		if (Buffer.isBuffer(opts.value)) return callback( new Error("The 'value' property must be an object (not a Buffer).") );
@@ -110,7 +136,7 @@ class S3API {
 		this.logDebug(8, "Storing JSON record: " + opts.key, Tools.copyHashRemoveKeys(opts, { value:1 }));
 		
 		// serialize and bufferize
-		var orig_value = opts.value;
+		let orig_value = opts.value;
 		opts.value = Buffer.from( opts.pretty ? JSON.stringify(opts.value, null, "\t") : JSON.stringify(opts.value) );
 		
 		if (!opts.params) opts.params = {};
@@ -128,16 +154,29 @@ class S3API {
 		});
 	}
 	
+	/** 
+	 * @typedef {Object} GetResponse
+	 * @property {Object} data - The value of the requested S3 object.
+	 * @property {Object} meta - Raw metadata object from the AWS S3 service.
+	 */
+	
+	/**
+	 * Fetch buffer from S3 and parse as JSON (key/value store).
+	 * @param {Object} opts - The options object for the get operation.
+	 * @param {string} opts.key - The key (S3 path) to fetch.
+	 * @param {string} [opts.bucket] - Optionally override the S3 bucket.
+	 * @returns {Promise<GetResponse>} - A promise that resolves to a custom object.
+	 */
 	get(opts, callback) {
 		// fetch buffer from S3 and parse as JSON
 		// opts: { bucket, key }
 		// result: { json, metadata }
-		var self = this;
+		let self = this;
 		if (typeof(opts) == 'string') opts = { key: opts };
 		
 		if (this.cache && opts.key.match(this.cache.keyMatch)) {
 			// chceck if item is in cache
-			var value = this.lru.get(opts.key);
+			let value = this.lru.get(opts.key);
 			if (value) {
 				// item is in cache and still fresh, use it
 				this.logDebug(8, "Using JSON record from cache: " + opts.key, opts);
@@ -150,7 +189,7 @@ class S3API {
 		this.getBuffer(opts, function(err, buf, meta) {
 			if (err) return callback(err);
 			
-			var json = null;
+			let json = null;
 			try { json = JSON.parse( buf.toString() ); }
 			catch (err) {
 				self.logError('json', "Failed to parse JSON record: " + opts.key + ": " + err);
@@ -167,23 +206,37 @@ class S3API {
 		});
 	}
 	
+	/** 
+	 * @typedef {Object} HeadResponse
+	 * @property {Object} meta - Raw metadata object from the AWS S3 service, augmented with extras.
+	 * @property {number} meta.size - The size of the content in bytes.
+	 * @property {number} meta.mtime - The last modified date of the object as Epoch seconds.
+	 */
+	
+	/**
+	 * See if object exists, and get its size and mod date.
+	 * @param {Object} opts - The options object for the head operation.
+	 * @param {string} opts.key - The key (S3 path) to head.
+	 * @param {string} [opts.bucket] - Optionally override the S3 bucket.
+	 * @returns {Promise<HeadResponse>} - A promise that resolves to a custom object.
+	 */
 	head(opts, callback) {
 		// see if object exists, and get its size & mod date
 		// opts: { bucket, key, nonfatal }
 		// result: { meta(size, mtime) }
-		var self = this;
+		let self = this;
 		if (typeof(opts) == 'string') opts = { key: opts };
 		if (!opts.bucket) opts.bucket = this.bucket;
 		if (!opts.bucket) return callback( new Error("Missing required 'bucket' (string) property.") );
 		if (!opts.key) return callback( new Error("Missing required 'key' (string) property.") );
 		
-		var params = Tools.mergeHashes( this.params || {}, opts.params || {} );
+		let params = Tools.mergeHashes( this.params || {}, opts.params || {} );
 		params.Bucket = opts.bucket;
 		params.Key = this.prefix + opts.key;
 		
 		this.logDebug(8, "Pinging key: " + opts.key, params);
 		
-		var tracker = this.perf ? this.perf.begin('s3_head') : null;
+		let tracker = this.perf ? this.perf.begin('s3_head') : null;
 		this.s3.send( new S3.HeadObjectCommand(params) )
 			.then( function(data) {
 				// data: { LastModified, ContentLength }
@@ -213,11 +266,21 @@ class S3API {
 			} );
 	}
 	
+	/**
+	 * Copy a single object from one location to another.
+	 * @param {Object} opts - The options object for the copy operation.
+	 * @param {Object} opts.sourceKey - The S3 key to copy from.
+	 * @param {string} opts.key - The S3 key to copy the object to. 
+	 * @param {Object} [opts.sourceBucket] - Optionally override the S3 bucket used to read the source record.
+	 * @param {string} [opts.bucket] - Optionally override the S3 bucket used to store the destination record.
+	 * @param {Object} [opts.params] - Optionally specify parameters to the S3 API, for e.g. ACL and Storage Class. 
+	 * @returns {Promise<MetaResponse>} - A promise that resolves to a custom object.
+	 */
 	copy(opts, callback) {
 		// copy a single object from one location to another
 		// opts: { sourceBucket, sourceKey, bucket, key, params }
 		// result: { metadata }
-		var self = this;
+		let self = this;
 		if (!opts.bucket) opts.bucket = this.bucket;
 		if (!opts.bucket) return callback( new Error("Missing required 'bucket' (string) property.") );
 		if (!opts.sourceBucket) opts.sourceBucket = this.bucket;
@@ -225,14 +288,14 @@ class S3API {
 		if (!opts.sourceKey) return callback( new Error("Missing required 'sourceKey' (string) property.") );
 		if (!opts.key) return callback( new Error("Missing required 'key' (string) property.") );
 		
-		var params = Tools.mergeHashes( this.params || {}, opts.params || {} );
+		let params = Tools.mergeHashes( this.params || {}, opts.params || {} );
 		params.CopySource = opts.sourceBucket + '/' + this.prefix + opts.sourceKey;
 		params.Bucket = opts.bucket;
 		params.Key = this.prefix + opts.key;
 		
 		this.logDebug(8, "Copying object: " + opts.sourceKey + " to: " + opts.key, params);
 		
-		var tracker = this.perf ? this.perf.begin('s3_copy') : null;
+		let tracker = this.perf ? this.perf.begin('s3_copy') : null;
 		this.s3.send( new S3.CopyObjectCommand(params) )
 			.then( function(data) {
 				if (tracker) tracker.end();
@@ -255,11 +318,21 @@ class S3API {
 			} );
 	}
 	
+	/**
+	 * Move a single object from one location to another.
+	 * @param {Object} opts - The options object for the move operation.
+	 * @param {Object} opts.sourceKey - The S3 key to copy from.
+	 * @param {string} opts.key - The S3 key to copy the object to. 
+	 * @param {Object} [opts.sourceBucket] - Optionally override the S3 bucket used to read the source record.
+	 * @param {string} [opts.bucket] - Optionally override the S3 bucket used to store the destination record.
+	 * @param {Object} [opts.params] - Optionally specify parameters to the S3 API, for e.g. ACL and Storage Class. 
+	 * @returns {Promise<MetaResponse>} - A promise that resolves to a custom object.
+	 */
 	move(opts, callback) {
 		// move a single object from one location to another
 		// opts: { sourceBucket, sourceKey, bucket, key, params }
 		// result: { metadata }
-		var self = this;
+		let self = this;
 		
 		this.copy(opts, function(err) {
 			if (err) return callback(err);
@@ -269,35 +342,52 @@ class S3API {
 		});
 	}
 	
+	/** 
+	 * @typedef {Object} ListFoldersResponse
+	 * @property {string[]} folders - An array of S3 path prefixes for subfolders just under the current level.
+	 * @property {Object[]} files - An array of file objects at the current folder level.
+	 * @property {string} files[].key - The object's full S3 key (including prefix if applicable).
+	 * @property {number} files[].size - The objects's size in bytes.
+	 * @property {number} files[].mtime - The object's modification date, as Epoch seconds.
+	 */
+	
+	/** 
+	 * List only subfolders from a start path -- single level and no pagination
+	 * @param {Object} opts - The options object for the listFolders operation.
+	 * @param {string} opts.remotePath - The base S3 path to look for folders under.
+	 * @param {string} [opts.delimiter=/] - Optionally override the delimiter for directory indexing.
+	 * @param {string} [opts.bucket] - Optionally specify the S3 bucket where the folders reside.
+	 * @returns {Promise<ListFoldersResponse>} - A promise that resolves to a custom object.
+	 */
 	listFolders(opts, callback) {
 		// list only subfolders from a start path -- single level and no pagination
 		// opts: { bucket, remotePath, delimiter }
 		// result: { folders, files }
-		var self = this;
+		let self = this;
 		
 		if (typeof(opts) == 'string') opts = { remotePath: opts };
 		if (!opts.bucket) opts.bucket = this.bucket;
 		if (!opts.bucket) return callback( new Error("Missing required 'bucket' (string) property.") );
 		if (!opts.remotePath) opts.remotePath = '';
 		
-		var params = Tools.mergeHashes( this.params || {}, opts.params || {} );
+		let params = Tools.mergeHashes( this.params || {}, opts.params || {} );
 		params.Bucket = opts.bucket;
 		params.Prefix = this.prefix + opts.remotePath;
 		params.MaxKeys = 1000;
 		params.Delimiter = opts.delimiter || '/';
 		
 		this.logDebug(8, "Listing S3 subfolders with prefix: " + params.Prefix, opts);
-		var tracker = this.perf ? this.perf.begin('s3_list') : null;
+		let tracker = this.perf ? this.perf.begin('s3_list') : null;
 		
 		this.s3.send( new S3.ListObjectsV2Command(params) )
 			.then( function(data) {
 				if (tracker) tracker.end();
 				
-				var folders = (data.CommonPrefixes || []).map( function(item) { 
+				let folders = (data.CommonPrefixes || []).map( function(item) { 
 					return item.Prefix; 
 				} );
 				
-				var files = (data.Contents || []).map( function(item) {
+				let files = (data.Contents || []).map( function(item) {
 					return { key: item.Key, size: item.Size, mtime: item.LastModified.getTime() / 1000 };
 				} );
 				
@@ -316,17 +406,36 @@ class S3API {
 			} );
 	}
 	
+	/** 
+	 * @typedef {Object} ListResponse
+	 * @property {number} bytes - The total number of bytes used by all matched objects.
+	 * @property {Object[]} files - An array of file objects that matched your criteria.
+	 * @property {string} files[].key - The object's full S3 key (including prefix if applicable).
+	 * @property {number} files[].size - The objects's size in bytes.
+	 * @property {number} files[].mtime - The object's modification date, as Epoch seconds.
+	 */
+	
+	/** 
+	 * Generate list of objects in S3 given prefix
+	 * @param {Object} opts - The options object for the list operation.
+	 * @param {string} opts.remotePath - The base S3 path to look for files under.
+	 * @param {RegExp} [opts.filespec] - Optionally filter the result files using a regular expression, matched on the filenames.
+	 * @param {Function} [opts.filter] - Optionally provide a filter function to select which files to return.
+	 * @param {(number|string)} [opts.older] - Optionally filter the S3 files based on their modification date.
+	 * @param {string} [opts.bucket] - Optionally specify the S3 bucket where the folders reside.
+	 * @returns {Promise<ListResponse>} - A promise that resolves to a custom object.
+	 */
 	list(opts, callback) {
 		// generate list of objects in S3 given prefix
 		// this repeatedly calls ListObjectsV2 for lists > 1000
 		// opts: { bucket, remotePath, filespec, filter }
 		// result: { files([{ key, size, mtime }, ...]), total_bytes }
-		var self = this;
-		var done = false;
-		var files = [];
-		var total_bytes = 0;
-		var num_calls = 0;
-		var now = Tools.timeNow(true);
+		let self = this;
+		let done = false;
+		let files = [];
+		let total_bytes = 0;
+		let num_calls = 0;
+		let now = Tools.timeNow(true);
 		
 		if (typeof(opts) == 'string') opts = { remotePath: opts };
 		if (!opts.bucket) opts.bucket = this.bucket;
@@ -341,13 +450,13 @@ class S3API {
 			opts.filter = function(file) { return file.mtime <= now - opts.older; };
 		}
 		
-		var params = Tools.mergeHashes( this.params || {}, opts.params || {} );
+		let params = Tools.mergeHashes( this.params || {}, opts.params || {} );
 		params.Bucket = opts.bucket;
 		params.Prefix = this.prefix + opts.remotePath;
 		params.MaxKeys = 1000;
 		
 		this.logDebug(8, "Listing S3 files with prefix: " + params.Prefix, opts);
-		var tracker = this.perf ? this.perf.begin('s3_list') : null;
+		let tracker = this.perf ? this.perf.begin('s3_list') : null;
 		
 		async.whilst(
 			function() { 
@@ -358,13 +467,13 @@ class S3API {
 				
 				self.s3.send( new S3.ListObjectsV2Command(params) )
 					.then( function(data) {
-						var items = data.Contents || [];
-						for (var idx = 0, len = items.length; idx < len; idx++) {
-							var item = items[idx];
-							var key = item.Key;
-							var bytes = item.Size;
-							var mtime = item.LastModified.getTime() / 1000;
-							var file = { key: key, size: bytes, mtime: mtime };
+						let items = data.Contents || [];
+						for (let idx = 0, len = items.length; idx < len; idx++) {
+							let item = items[idx];
+							let key = item.Key;
+							let bytes = item.Size;
+							let mtime = item.LastModified.getTime() / 1000;
+							let file = { key: key, size: bytes, mtime: mtime };
 							
 							// optional filter and filespec
 							if (opts.filter(file) && Path.basename(key).match(opts.filespec)) {
@@ -404,15 +513,26 @@ class S3API {
 		); // whilst
 	}
 	
+	/** 
+	 * Recursively walk S3 and fire sync iterator for every file under a given prefix.
+	 * @param {Object} opts - The options object for the walk operation.
+	 * @param {string} opts.remotePath - The base S3 path to look for files under.
+	 * @param {Function} opts.iterator - A synchronous function that is called for every remote S3 file.
+	 * @param {RegExp} [opts.filespec] - Optionally filter the result files using a regular expression, matched on the filenames.
+	 * @param {Function} [opts.filter] - Optionally provide a filter function to select which files to return.
+	 * @param {(number|string)} [opts.older] - Optionally filter the S3 files based on their modification date.
+	 * @param {string} [opts.bucket] - Optionally specify the S3 bucket where the folders reside.
+	 * @returns {Promise<Object>} - A promise that resolves to a custom object.
+	 */
 	walk(opts, callback) {
 		// fire sync iterator for every file in S3 given prefix
 		// this repeatedly calls ListObjectsV2 for lists > 1000
 		// opts: { bucket, remotePath, filespec, filter, iterator }
 		// result: { }
-		var self = this;
-		var done = false;
-		var num_calls = 0;
-		var now = Tools.timeNow(true);
+		let self = this;
+		let done = false;
+		let num_calls = 0;
+		let now = Tools.timeNow(true);
 		
 		if (!opts.bucket) opts.bucket = this.bucket;
 		if (!opts.bucket) return callback( new Error("Missing required 'bucket' (string) property.") );
@@ -427,13 +547,13 @@ class S3API {
 			opts.filter = function(file) { return file.mtime <= now - opts.older; };
 		}
 		
-		var params = Tools.mergeHashes( this.params || {}, opts.params || {} );
+		let params = Tools.mergeHashes( this.params || {}, opts.params || {} );
 		params.Bucket = opts.bucket;
 		params.Prefix = this.prefix + opts.remotePath;
 		params.MaxKeys = 1000;
 		
 		this.logDebug(8, "Walking S3 files with prefix: " + params.Prefix, opts);
-		var tracker = this.perf ? this.perf.begin('s3_list') : null;
+		let tracker = this.perf ? this.perf.begin('s3_list') : null;
 		
 		async.whilst(
 			function() { 
@@ -444,13 +564,13 @@ class S3API {
 				
 				self.s3.send( new S3.ListObjectsV2Command(params) )
 					.then( function(data) {
-						var items = data.Contents || [];
-						for (var idx = 0, len = items.length; idx < len; idx++) {
-							var item = items[idx];
-							var key = item.Key;
-							var bytes = item.Size;
-							var mtime = item.LastModified.getTime() / 1000;
-							var file = { key: key, size: bytes, mtime: mtime };
+						let items = data.Contents || [];
+						for (let idx = 0, len = items.length; idx < len; idx++) {
+							let item = items[idx];
+							let key = item.Key;
+							let bytes = item.Size;
+							let mtime = item.LastModified.getTime() / 1000;
+							let file = { key: key, size: bytes, mtime: mtime };
 							
 							// optional filter and filespec
 							if (opts.filter(file) && Path.basename(key).match(opts.filespec)) {
@@ -487,17 +607,24 @@ class S3API {
 		); // whilst
 	}
 	
+	/**
+	 * Delete a single S3 object.
+	 * @param {Object} opts - The options object for the delete operation.
+	 * @param {string} opts.key - The key (S3 path) to delete.
+	 * @param {string} [opts.bucket] - Optionally override the S3 bucket.
+	 * @returns {Promise<MetaResponse>} - A promise that resolves to a custom object.
+	 */
 	delete(opts, callback) {
 		// delete s3 object
 		// opts: { bucket, key }
 		// result: { metadata }
-		var self = this;
+		let self = this;
 		if (typeof(opts) == 'string') opts = { key: opts };
 		if (!opts.bucket) opts.bucket = this.bucket;
 		if (!opts.bucket) return callback( new Error("Missing required 'bucket' (string) property.") );
 		if (!opts.key) return callback( new Error("Missing required 'key' (string) property.") );
 		
-		var params = Tools.mergeHashes( this.params || {}, opts.params || {} );
+		let params = Tools.mergeHashes( this.params || {}, opts.params || {} );
 		params.Bucket = opts.bucket;
 		params.Key = this.prefix + opts.key;
 		
@@ -515,7 +642,7 @@ class S3API {
 		this.head( opts, function(err, meta) {
 			if (err) return callback(err);
 			
-			var tracker = self.perf ? self.perf.begin('s3_delete') : null;
+			let tracker = self.perf ? self.perf.begin('s3_delete') : null;
 			self.s3.send( new S3.DeleteObjectCommand(params) )
 				.then( function(meta) {
 					if (tracker) tracker.end();
@@ -530,11 +657,21 @@ class S3API {
 		} ); // head
 	}
 	
+	/**
+	 * Upload a single file to S3.
+	 * @param {Object} opts - The options object for the uploadFile operation.
+	 * @param {string} opts.key - The key (S3 path) to store the file under.
+	 * @param {string} opts.localFile - A path to the file on local disk.
+	 * @param {string} [opts.bucket] - Optionally override the S3 bucket.
+	 * @param {Object} [opts.params] - Optionally specify parameters to the S3 API, for e.g. ACL and Storage Class. 
+	 * @param {boolean} [opts.compress=false] - Optionally compress the file during upload.
+	 * @returns {Promise<MetaResponse>} - A promise that resolves to a custom object.
+	 */
 	uploadFile(opts, callback) {
 		// upload file to S3 using streams
 		// opts: { bucket, key, localFile, params, compress }
 		// result: { metadata }
-		var self = this;
+		let self = this;
 		if (!opts.key) return callback( new Error("Missing required 'key' (string) property.") );
 		if (!opts.localFile) return callback( new Error("Missing required 'localFile' (string) property.") );
 		if (typeof(opts.localFile) != 'string') return callback( new Error("The 'localFile' property must be a string (file path).") );
@@ -555,11 +692,20 @@ class S3API {
 		}); // fs.stat
 	}
 	
+	/**
+	 * Download an object from S3, and saves it to a local file on disk.
+	 * @param {Object} opts - The options object for the downloadFile operation.
+	 * @param {string} opts.key - The S3 key of the object to download.
+	 * @param {string} opts.localFile - A path to the destination file on local disk.
+	 * @param {string} [opts.bucket] - Optionally override the S3 bucket.
+	 * @param {boolean} [opts.decompress=false] - Optionally decompress the file during download.
+	 * @returns {Promise<MetaResponse>} - A promise that resolves to a custom object.
+	 */
 	downloadFile(opts, callback) {
 		// download file from S3 using streams, save to local fs
 		// opts: { bucket, key, localFile, decompress }
 		// result: { metadata }
-		var self = this;
+		let self = this;
 		if (!opts.localFile) return callback( new Error("Missing required 'localFile' (string) property.") );
 		if (typeof(opts.localFile) != 'string') return callback( new Error("The 'localFile' property must be a string (file path).") );
 		if (opts.localFile.match(/\/$/)) opts.localFile += Path.basename(opts.key); // copy filename from key
@@ -575,9 +721,9 @@ class S3API {
 			self.getStream(opts, function(err, inp, meta) {
 				if (err) return callback(err);
 				
-				var done = false;
-				var tracker = self.perf ? self.perf.begin('s3_get') : null;
-				var outp = fs.createWriteStream(opts.localFile);
+				let done = false;
+				let tracker = self.perf ? self.perf.begin('s3_get') : null;
+				let outp = fs.createWriteStream(opts.localFile);
 				
 				inp.on('error', function(err) {
 					if (done) return; else done = true;
@@ -605,11 +751,24 @@ class S3API {
 		} ); // mkdirp
 	}
 	
+	/**
+	 * Recursively uploads multiple files / directories from the local filesystem to S3.
+	 * @param {Object} opts - The options object for the uploadFiles operation.
+	 * @param {string} opts.localPath - The base filesystem path to find files under.  Should resolve to a folder.
+	 * @param {string} opts.remotePath - The base S3 path to store files under.
+	 * @param {RegExp} [opts.filespec] - Optionally filter the local files using a regular expression, matched on the filenames.
+	 * @param {number} [opts.threads=1] - Optionally increase the threads to improve performance.
+	 * @param {string} [opts.bucket] - Optionally override the S3 bucket.
+	 * @param {Object} [opts.params] - Optionally specify parameters to the S3 API, for e.g. ACL and Storage Class. 
+	 * @param {boolean} [opts.compress=false] - Optionally compress the files during upload.
+	 * @param {string} [opts.suffix] - Optionally append a suffix to every destination S3 key, e.g. `.gz` for compressed files.
+	 * @returns {Promise<ListResponse>} - A promise that resolves to a custom object.
+	 */
 	uploadFiles(opts, callback) {
 		// upload multiple files using local fs scan
 		// opts: { bucket, remotePath, filespec, threads, localPath, compress, suffix }
 		// result: { files[] }
-		var self = this;
+		let self = this;
 		if (!opts.localPath) opts.localPath = process.cwd();
 		opts.localPath = Path.resolve(opts.localPath);
 		if (!opts.remotePath) opts.remotePath = '';
@@ -626,7 +785,7 @@ class S3API {
 			
 			async.eachLimit( files, opts.threads || 1,
 				function(file, callback) {
-					var dest_key = opts.remotePath + file.slice(opts.localPath.length) + (opts.suffix || '');
+					let dest_key = opts.remotePath + file.slice(opts.localPath.length) + (opts.suffix || '');
 					self.uploadFile( Tools.mergeHashes(opts, { key: dest_key, localFile: file }), callback );
 				},
 				function(err) {
@@ -637,11 +796,23 @@ class S3API {
 		}); // findFiles
 	}
 	
+	/**
+	 * Recursively downloads multiple files / directories from S3 to the local filesystem.
+	 * @param {Object} opts - The options object for the downloadFiles operation.
+	 * @param {string} opts.remotePath - The base S3 path to fetch files from.
+	 * @param {string} opts.localPath - The local filesystem path to save files under.
+	 * @param {RegExp} [opts.filespec] - Optionally filter the S3 files using a regular expression, matched on the filenames.
+	 * @param {number} [opts.threads=1] - Optionally increase the threads to improve performance.
+	 * @param {string} [opts.bucket] - Optionally override the S3 bucket.
+	 * @param {boolean} [opts.decompress=false] - Optionally decompress the files during download.
+	 * @param {RegExp} [opts.strip] - Optionally strip a suffix from every destination filename.
+	 * @returns {Promise<ListResponse>} - A promise that resolves to a custom object.
+	 */
 	downloadFiles(opts, callback) {
 		// download multiple files using s3 list
 		// opts: { bucket, remotePath, filespec, threads, localPath, decompress, strip }
 		// result: { files([{ key, size, mtime }, ...]), total_bytes }
-		var self = this;
+		let self = this;
 		if (!opts.localPath) opts.localPath = process.cwd();
 		opts.localPath = Path.resolve(opts.localPath);
 		
@@ -652,7 +823,7 @@ class S3API {
 			
 			async.eachLimit( files, opts.threads || 1,
 				function(file, callback) {
-					var dest_file = opts.localPath + file.key.slice(self.prefix.length + opts.remotePath.length);
+					let dest_file = opts.localPath + file.key.slice(self.prefix.length + opts.remotePath.length);
 					if (opts.strip) dest_file = dest_file.replace(opts.strip, '');
 					self.downloadFile( Tools.mergeHashes(opts, { key: file.key.slice(self.prefix.length), localFile: dest_file }), callback );
 				},
@@ -664,11 +835,21 @@ class S3API {
 		}); // list
 	}
 	
+	/** 
+	 * Recursively deletes multiple files / directories from S3.
+	 * @param {Object} opts - The options object for the list operation.
+	 * @param {string} opts.remotePath - The base S3 path to delete files from.
+	 * @param {RegExp} [opts.filespec] - Optionally filter the S3 files using a regular expression, matched on the filenames.
+	 * @param {(number|string)} [opts.older] - Optionally filter the S3 files based on their modification date.
+	 * @param {number} [opts.threads=1] - Optionally increase the threads to improve performance.
+	 * @param {string} [opts.bucket] - Optionally specify the S3 bucket where the folders reside.
+	 * @returns {Promise<ListResponse>} - A promise that resolves to a custom object.
+	 */
 	deleteFiles(opts, callback) {
 		// delete multiple files using s3 list
 		// opts: { bucket, remotePath, filespec, threads }
 		// result: { files([{ key, size, mtime }, ...]), total_bytes }
-		var self = this;
+		let self = this;
 		
 		this.list(opts, function(err, files, bytes) {
 			if (err) return callback(err, null, null);
@@ -685,11 +866,21 @@ class S3API {
 		}); // list
 	}
 	
+	/**
+	 * Upload a Node.js Buffer object to S3, given a key.
+	 * @param {Object} opts - The options object for the putBuffer operation.
+	 * @param {string} opts.key - The key (S3 path) to store the object under.
+	 * @param {Buffer} opts.value - The Buffer to store as the object content.
+	 * @param {string} [opts.bucket] - Optionally override the S3 bucket.
+	 * @param {Object} [opts.params] - Optionally specify parameters to the S3 API, for e.g. ACL and Storage Class. 
+	 * @param {boolean} [opts.compress=false] - Optionally compress the buffer during upload.
+	 * @returns {Promise<MetaResponse>} - A promise that resolves to a custom object.
+	 */
 	putBuffer(opts, callback) {
 		// upload buffer object to S3
 		// opts: { bucket, key, value, params, compress }
 		// result: { metadata }
-		var self = this;
+		let self = this;
 		if (!opts.bucket) opts.bucket = this.bucket;
 		if (!opts.bucket) return callback( new Error("Missing required 'bucket' (string) property.") );
 		if (!opts.key) return callback( new Error("Missing required 'key' (string) property.") );
@@ -699,17 +890,25 @@ class S3API {
 		this.logDebug(9, "Storing Buffer: " + opts.key + ' (' + opts.value.length + ' bytes)', opts.params);
 		
 		// convert buffer to stream
-		var buf = opts.value;
+		let buf = opts.value;
 		opts.value = Readable.from(buf);
 		
 		this.putStream(opts, callback);
 	}
 	
+	/**
+	 * Fetch an S3 object, and return a Node.js Buffer.
+	 * @param {Object} opts - The options object for the get operation.
+	 * @param {string} opts.key - The key (S3 path) to fetch.
+	 * @param {string} [opts.bucket] - Optionally override the S3 bucket.
+	 * @param {boolean} [opts.decompress=false] - Optionally decompress the buffer during download.
+	 * @returns {Promise<GetResponse>} - A promise that resolves to a custom object.
+	 */
 	getBuffer(opts, callback) {
 		// fetch buffer from S3 (must convert from stream)
 		// opts: { bucket, key, decompress }
 		// result: { buffer, metadata }
-		var self = this;
+		let self = this;
 		if (typeof(opts) == 'string') opts = { key: opts };
 		
 		this.getStream( opts, function(err, inp, data) {
@@ -730,18 +929,28 @@ class S3API {
 		} ); // getStream
 	}
 	
+	/**
+	 * Uploads a Node.js Stream to S3, given a key.
+	 * @param {Object} opts - The options object for the putStream operation.
+	 * @param {string} opts.key - The key (S3 path) to store the object under.
+	 * @param {Object} opts.value - The Stream to store as the object content.
+	 * @param {string} [opts.bucket] - Optionally override the S3 bucket.
+	 * @param {Object} [opts.params] - Optionally specify parameters to the S3 API, for e.g. ACL and Storage Class. 
+	 * @param {boolean} [opts.compress=false] - Optionally compress the stream during upload.
+	 * @returns {Promise<MetaResponse>} - A promise that resolves to a custom object.
+	 */
 	putStream(opts, callback) {
 		// upload stream to S3 as multipart
 		// opts: { bucket, key, value, params, compress }
 		// result: { metadata }
-		var self = this;
+		let self = this;
 		if (!opts.bucket) opts.bucket = this.bucket;
 		if (!opts.bucket) return callback( new Error("Missing required 'bucket' (string) property.") );
 		if (!opts.key) return callback( new Error("Missing required 'key' (string) property.") );
 		if (!opts.value) return callback( new Error("Missing required 'value' (stream) property.") );
 		if (!isStream(opts.value)) return callback( new Error("The 'value' property must be a stream object.") );
 		
-		var params = Tools.mergeHashes( this.params || {}, opts.params || {} );
+		let params = Tools.mergeHashes( this.params || {}, opts.params || {} );
 		params.Bucket = opts.bucket;
 		params.Key = this.prefix + opts.key;
 		
@@ -749,8 +958,8 @@ class S3API {
 		
 		if (opts.compress) {
 			self.logDebug(9, "Compressing stream with gzip");
-			var gzip = zlib.createGzip( opts.gzip || self.gzip || {} );
-			var inp = opts.value;
+			let gzip = zlib.createGzip( opts.gzip || self.gzip || {} );
+			let inp = opts.value;
 			inp.pipe(gzip);
 			params.Body = gzip;
 		}
@@ -758,7 +967,7 @@ class S3API {
 			params.Body = opts.value;
 		}
 		
-		var tracker = this.perf ? this.perf.begin('s3_put') : null;
+		let tracker = this.perf ? this.perf.begin('s3_put') : null;
 		let upload = new Upload({
 			client: this.s3,
 			params: params
@@ -777,23 +986,31 @@ class S3API {
 			} );
 	}
 	
+	/**
+	 * Fetch an S3 object, and returns a Node.js readable stream.
+	 * @param {Object} opts - The options object for the getStream operation.
+	 * @param {string} opts.key - The key (S3 path) to fetch.
+	 * @param {string} [opts.bucket] - Optionally override the S3 bucket.
+	 * @param {boolean} [opts.decompress=false] - Optionally decompress the stream during download.
+	 * @returns {Promise<GetResponse>} - A promise that resolves to a custom object.
+	 */
 	getStream(opts, callback) {
 		// fetch stream from S3
 		// opts: { bucket, key, decompress }
 		// result: { stream, metadata }
-		var self = this;
+		let self = this;
 		if (typeof(opts) == 'string') opts = { key: opts };
 		if (!opts.bucket) opts.bucket = this.bucket;
 		if (!opts.bucket) return callback( new Error("Missing required 'bucket' (string) property.") );
 		if (!opts.key) return callback( new Error("Missing required 'key' (string) property.") );
 		
-		var params = Tools.mergeHashes( this.params || {}, opts.params || {} );
+		let params = Tools.mergeHashes( this.params || {}, opts.params || {} );
 		params.Bucket = opts.bucket;
 		params.Key = this.prefix + opts.key;
 		
 		this.logDebug(9, "Fetching stream: " + opts.key, params);
 		
-		var tracker = this.perf ? this.perf.begin('s3_get') : null;
+		let tracker = this.perf ? this.perf.begin('s3_get') : null;
 		this.s3.send( new S3.GetObjectCommand(params) )
 			.then( function(data) {
 				// break out of promise context
@@ -803,7 +1020,7 @@ class S3API {
 					
 					if (opts.decompress) {
 						self.logDebug(9, "Decompressing stream with gunzip");
-						var gzip = zlib.createGunzip();
+						let gzip = zlib.createGunzip();
 						gzip.on('error', function(err) {
 							self.logError('gzip', "Gzip Decompress Error: " + opts.key + ": " + (err.message || err));
 						});
@@ -831,21 +1048,30 @@ class S3API {
 			} );
 	}
 	
+	/** 
+	 * @typedef {Object} ListBucketsResponse
+	 * @property {string[]} buckets - Array of S3 bucket names.
+	 */
+	
+	/**
+	 * Fetch the complete list of S3 buckets in your AWS account.
+	 * @returns {Promise<ListBucketsResponse>} - A promise that resolves to a custom object.
+	 */
 	listBuckets(callback) {
 		// list buckets -- no options
 		// result: { buckets }
-		var self = this;
-		var opts = {};
-		var params = Tools.mergeHashes( this.params || {}, opts.params || {} );
+		let self = this;
+		let opts = {};
+		let params = Tools.mergeHashes( this.params || {}, opts.params || {} );
 		
 		this.logDebug(8, "Listing buckets", opts);
-		var tracker = this.perf ? this.perf.begin('s3_list') : null;
+		let tracker = this.perf ? this.perf.begin('s3_list') : null;
 		
 		this.s3.send( new S3.ListBucketsCommand(params) )
 			.then( function(data) {
 				if (tracker) tracker.end();
 				
-				var buckets = (data.Buckets || []).map( function(item) { 
+				let buckets = (data.Buckets || []).map( function(item) { 
 					return item.Name; 
 				} );
 				
@@ -862,6 +1088,13 @@ class S3API {
 			} );
 	}
 	
+	/** 
+	 * Log a debug message to the attached log agent.
+	 * @private
+	 * @param {number} level - The log level of the debug message.
+	 * @param {string} msg - The message text to log.
+	 * @param {Object} [data] - Optional data to accompany the log message.
+	 */
 	logDebug(level, msg, data) {
 		// log a debug message
 		if (this.logger) {
@@ -870,6 +1103,13 @@ class S3API {
 		}
 	}
 	
+	/** 
+	 * Log an error to the attached log agent.
+	 * @private
+	 * @param {(number|string)} code - The error code to log.
+	 * @param {string} msg - The error message text to log.
+	 * @param {Object} [data] - Optional data to accompany the log message.
+	 */
 	logError(code, msg, data) {
 		// log an error message
 		if (this.logger) {
@@ -878,12 +1118,37 @@ class S3API {
 		}
 	}
 	
-}); // class S3API
+}; // class S3API
 
-///
-// Utilities:
-///
+asyncify( S3API, {
+	put: ['meta'],
+	get: ['data', 'meta'],
+	head: ['meta'],
+	listFolders: ['folders', 'files'],
+	list: ['files', 'bytes'],
+	walk: [],
+	copy: ['meta'],
+	move: ['meta'],
+	delete: ['meta'],
+	uploadFile: ['meta'],
+	downloadFile: ['meta'],
+	uploadFiles: ['files'],
+	downloadFiles: ['files', 'bytes'],
+	deleteFiles: ['files', 'bytes'],
+	putBuffer: ['meta'],
+	getBuffer: ['data', 'meta'],
+	putStream: ['meta'],
+	getStream: ['data', 'meta'],
+	listBuckets: ['buckets']
+} );
 
+module.exports = S3API;
+
+/** 
+ * Use duck typing to sniff if variable is a stream
+ * @param {*} stream - The variable to sniff.
+ * @returns {boolean} - The result of the sniff.
+ */
 function isStream(stream) {
 	// use duck typing to sniff if variable is a stream
 	// from: https://github.com/sindresorhus/is-stream

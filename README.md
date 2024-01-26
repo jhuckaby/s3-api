@@ -810,7 +810,7 @@ The method accepts an object containing the following properties:
 |---------------|------|-------------|
 | `remotePath` | String | The base S3 path to look for folders under.  This may be prepended with a `prefix` if set on the class instance. |
 | `delimiter` | String | Optionally override the delimiter for directory indexing.  Defaults to `/`. |
-| `bucket` | String | Optionally specify the S3 bucket where the records are stored.  This is usually set in the class constructor. |
+| `bucket` | String | Optionally specify the S3 bucket where the folders reside.  This is usually set in the class constructor. |
 
 The response object will contain the following keys, which you can destruct into variables as shown above:
 
@@ -1292,7 +1292,7 @@ The response object will contain the following keys, which you can destruct into
 
 **The MIT License (MIT)**
 
-*Copyright (c) 2023 Joseph Huckaby.*
+*Copyright (c) 2023 - 2024 Joseph Huckaby and PixlCore.*
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
