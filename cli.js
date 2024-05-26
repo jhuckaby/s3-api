@@ -367,7 +367,6 @@ const app = {
 		// await this.doS3Cmd(this.cmd);
 		
 		delete args.other;
-		
 		println( gray(JSON.stringify( { region: this.s3.region, ...args } )) + "\n" );
 		
 		try {
@@ -424,7 +423,6 @@ const app = {
 		// await this.doS3Cmd(this.cmd);
 		
 		delete args.other;
-		
 		println( gray(JSON.stringify( { region: this.s3.region, ...args } )) + "\n" );
 		
 		try {
@@ -469,7 +467,6 @@ const app = {
 		// await this.doS3Cmd(this.cmd);
 		
 		delete args.other;
-		
 		println( gray(JSON.stringify( { region: this.s3.region, ...args } )) + "\n" );
 		
 		try {
@@ -522,6 +519,7 @@ const app = {
 	async cmd_listBuckets() {
 		// list all buckets
 		// s3 listBuckets
+		
 		delete args.other;
 		println( gray(JSON.stringify( { region: this.s3.region, ...args } )) + "\n" );
 		

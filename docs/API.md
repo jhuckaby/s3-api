@@ -212,6 +212,7 @@ The method accepts an object containing the following properties:
 | Property Name | Type | Description |
 |---------------|------|-------------|
 | `key` | String | **(Required)** The S3 key of the object you want to get.  This may be prepended with a `prefix` if set on the class instance. |
+| `subpath` | String | Optionally fetch a subpath (nested object) using dot.path.notation, instead of the entire JSON record. |
 | `bucket` | String | Optionally specify the S3 bucket where the record is stored.  This is usually set in the class constructor. |
 
 The response object will contain the following keys, which you can destruct into variables as shown above:

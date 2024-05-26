@@ -262,6 +262,7 @@ The `get` command accepts the following named arguments:
 
 | Property Name | Type | Description |
 |---------------|------|-------------|
+| `subpath` | String | Optionally fetch a subpath (nested object) using dot.path.notation, instead of the entire JSON record. |
 | `pretty` | Boolean | Optionally serialize the JSON using "pretty-printing" (formatting with multiple lines and tab indentations). |
 | `quiet` | Boolean | Suppress all console output, except for the JSON record itself. |
 | `verbose` | Boolean | Enable extra verbose output, for informational or troubleshooting purposes. |

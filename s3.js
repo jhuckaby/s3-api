@@ -165,6 +165,7 @@ class S3API {
 	 * Fetch buffer from S3 and parse as JSON (key/value store).
 	 * @param {Object} opts - The options object for the get operation.
 	 * @param {string} opts.key - The key (S3 path) to fetch.
+	 * @param {string} [opts.subpath] - Optionally fetch a subpath using dot.path.notation.
 	 * @param {string} [opts.bucket] - Optionally override the S3 bucket.
 	 * @returns {Promise<GetResponse>} - A promise that resolves to a custom object.
 	 */
@@ -181,7 +182,9 @@ class S3API {
 			if (value) {
 				// item is in cache and still fresh, use it
 				this.logDebug(8, "Using JSON record from cache: " + opts.key, opts);
-				return process.nextTick( function() { callback( null, value, { cached: true } ); } );
+				return process.nextTick( function() { 
+					callback( null, opts.subpath ? Tools.getPath(value, opts.subpath) : value, { cached: true } ); 
+				} );
 			}
 		}
 		
@@ -203,7 +206,7 @@ class S3API {
 			}
 			
 			self.logDebug(9, "JSON fetch complete: " + opts.key);
-			callback( null, json, meta );
+			callback( null, opts.subpath ? Tools.getPath(json, opts.subpath) : json, meta );
 		});
 	}
 	
