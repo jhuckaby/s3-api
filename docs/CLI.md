@@ -355,6 +355,7 @@ The `list` command (alias `ls`) fetches and outputs a listing of remote S3 objec
 
 ```sh
 s3 list s3://my-bucket/s3dir/
+s3 ls s3://my-bucket/s3dir/
 ```
 
 The `list` command accepts the following optional arguments:
@@ -381,10 +382,11 @@ A few notes:
 s3 listFolders S3_URL
 ```
 
-The `listFolders` command fetches and outputs a listing of remote S3 files and "subfolders" that exist under a specified key prefix.  The S3 storage system doesn't *really* have a folder tree, but it fakes one by indexing keys by a delimiter (typically slash).  This method fetches one subfolder level only -- it does not recurse for nested folders.  Example:
+The `listFolders` command (alias `lf`) fetches and outputs a listing of remote S3 files and "subfolders" that exist under a specified key prefix.  The S3 storage system doesn't *really* have a folder tree, but it fakes one by indexing keys by a delimiter (typically slash).  This method fetches one subfolder level only -- it does not recurse for nested folders.  Example:
 
 ```sh
 s3 listFolders s3://my-bucket/s3dir/
+s3 lf s3://my-bucket/s3dir/
 ```
 
 The `listFolders` command accepts the following optional arguments:
@@ -415,10 +417,11 @@ The items of the `files` array will contain the following properties:
 s3 listBuckets
 ```
 
-The `listBuckets` command fetches the complete list of S3 buckets in your AWS account.  It accepts no options.  Example:
+The `listBuckets` command (alias `lb`) fetches the complete list of S3 buckets in your AWS account.  It accepts no options.  Example:
 
 ```sh
 s3 listBuckets
+s3 lb
 ```
 
 Include `--json` to print the results in JSON, rather than an ASCII table.
@@ -433,6 +436,7 @@ The `copy` command (alias `cp`) copies one S3 object to another S3 location.  Th
 
 ```sh
 s3 copy s3://my-bucket/users/oldkermit.json s3://my-bucket/users/newkermit.json
+s3 cp s3://my-bucket/users/oldkermit.json s3://my-bucket/users/newkermit.json
 ```
 
 You can include `--params` here to customize things in the destination like ACL or storage class.  See [S3 Params](#s3-params) for details.
@@ -447,6 +451,7 @@ The `move` command (alias `mv`) moves one S3 object to another S3 location.  Ess
 
 ```sh
 s3 move s3://my-bucket/users/oldkermit.json s3://my-bucket/users/newkermit.json
+s3 mv s3://my-bucket/users/oldkermit.json s3://my-bucket/users/newkermit.json
 ```
 
 You can include `--params` here to customize things in the destination like ACL or storage class.  See [S3 Params](#s3-params) for details.
@@ -461,6 +466,7 @@ The `delete` command (alias `rm`) deletes a single object from S3 given its key.
 
 ```sh
 s3 delete s3://my-bucket/s3dir/myfile.gif
+s3 rm s3://my-bucket/s3dir/myfile.gif
 ```
 
 ### upload
@@ -469,10 +475,11 @@ s3 delete s3://my-bucket/s3dir/myfile.gif
 s3 upload LOCAL_FILE S3_URL
 ```
 
-The `upload` command uploads a single file from the local filesystem to an object in S3.  This uses streams and multi-part chunks internally, so it can handle files of any size while using very little memory.  Example:
+The `upload` command (alias `up`) uploads a single file from the local filesystem to an object in S3.  This uses streams and multi-part chunks internally, so it can handle files of any size while using very little memory.  Example:
 
 ```sh
 s3 upload /path/to/image.gif s3://my-bucket/s3dir/myfile.gif
+s3 up /path/to/image.gif s3://my-bucket/s3dir/myfile.gif
 ```
 
 Note that you can omit the filename portion of the S3 URL if you want.  Specifically, if the S3 URL ends with a slash (`/`) the library will automatically append the local filename to the end of the S3 key.
@@ -489,9 +496,10 @@ The `upload` command accepts the following optional arguments:
 
 ```
 s3 download S3_URL LOCAL_FILE
+s3 dl S3_URL LOCAL_FILE
 ```
 
-The `download` command downloads a single object from S3, and saves it to a local file on disk.  The local file's parent directories will be automatically created if needed.  This uses streams internally, so it can handle files of any size while using very little memory.  Example:
+The `download` command (alias `dl`) downloads a single object from S3, and saves it to a local file on disk.  The local file's parent directories will be automatically created if needed.  This uses streams internally, so it can handle files of any size while using very little memory.  Example:
 
 ```sh
 s3 download s3://my-bucket/s3dir/myfile.gif /path/to/image.gif

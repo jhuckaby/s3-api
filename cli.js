@@ -580,6 +580,12 @@ const app = {
 		}
 	},
 	
+	async cmd_lf() {
+		// alias for listFolders
+		cmd = this.cmd = 'listFolders';
+		await this.cmd_listFolders();
+	},
+	
 	async cmd_listBuckets() {
 		// list all buckets
 		// s3 listBuckets
@@ -605,6 +611,12 @@ const app = {
 		catch (err) {
 			this.die(err);
 		}
+	},
+	
+	async cmd_lb() {
+		// alias for listBuckets
+		cmd = this.cmd = 'listBuckets';
+		await this.cmd_listBuckets();
 	},
 	
 	async cmd_copy() {
@@ -656,12 +668,30 @@ const app = {
 		await this.doS3Cmd('uploadFile');
 	},
 	
+	async cmd_up() {
+		// alias for upload
+		cmd = this.cmd = 'upload';
+		await this.cmd_upload();
+	},
+	
+	async cmd_ul() {
+		// alias for upload
+		cmd = this.cmd = 'upload';
+		await this.cmd_upload();
+	},
+	
 	async cmd_download() {
 		// upload single file -- alias for downloadFile
 		// s3 download s3://my-bucket/s3dir/myfile.gif /path/to/image.gif
 		this.shiftS3Spec('bucket', 'key') || this.dieUsage(this.cmd);
 		this.shiftOther('localFile') || this.dieUsage(this.cmd);
 		await this.doS3Cmd('downloadFile');
+	},
+	
+	async cmd_dl() {
+		// alias for download
+		cmd = this.cmd = 'download';
+		await this.cmd_download();
 	},
 	
 	async cmd_uploadFiles() {
