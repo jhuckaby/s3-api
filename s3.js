@@ -6,6 +6,7 @@
 const fs = require('fs');
 const zlib = require('zlib');
 const Path = require('path');
+const mime = require('mime-types');
 const Tools = require('pixl-tools');
 const LRU = require('pixl-cache');
 const { Readable } = require('stream');
@@ -719,6 +720,12 @@ class S3API {
 		if (!opts.localFile) return callback( new Error("Missing required 'localFile' (string) property.") );
 		if (typeof(opts.localFile) != 'string') return callback( new Error("The 'localFile' property must be a string (file path).") );
 		if (opts.key.match(/\/$/)) opts.key += Path.basename(opts.localFile); // copy s3 filename from local filename
+		
+		// auto-detect mime type
+		if (!opts.params) opts.params = {};
+		if (!opts.params.ContentType) {
+			opts.params.ContentType = mime.lookup(opts.localFile) || 'application/octet-stream';
+		}
 		
 		fs.stat( opts.localFile, function(err, stats) {
 			if (err) {

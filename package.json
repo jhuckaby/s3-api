@@ -15,6 +15,7 @@
 		"@aws-sdk/client-s3": "3.414.0",
 		"@aws-sdk/lib-storage": "3.414.0",
 		"@smithy/node-http-handler": "2.1.4",
+		"mime-types": "2.1.35",
 		"fast-stream-to-buffer": "1.0.0",
 		"pixl-cache": "^1.0.6",
 		"pixl-class-util": "^1.0.0",
