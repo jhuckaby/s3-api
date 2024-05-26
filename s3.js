@@ -123,6 +123,7 @@ class S3API {
 	 * @param {string} [opts.bucket] - Optionally override the S3 bucket.
 	 * @param {Object} [opts.params] - Optionally specify parameters to the S3 API, for e.g. ACL and Storage Class. 
 	 * @param {boolean} [opts.pretty=false] - Optionally pretty-print the JSON.
+	 * @param {boolean} [opts.dry=false] - Optionally do a dry run (take no action).
 	 * @returns {Promise<MetaResponse>} - A promise that resolves to a custom object.
 	 */
 	put(opts, callback) {
@@ -216,6 +217,7 @@ class S3API {
 	 * @param {string} opts.key - The key (S3 path) to update.
 	 * @param {Object} opts.updates - The value containing properties to update.
 	 * @param {string} [opts.bucket] - Optionally override the S3 bucket.
+	 * @param {boolean} [opts.dry=false] - Optionally do a dry run (take no action).
 	 * @returns {Promise<GetResponse>} - A promise that resolves to a custom object.
 	 */
 	update(opts, callback) {
@@ -318,6 +320,7 @@ class S3API {
 	 * @param {Object} [opts.sourceBucket] - Optionally override the S3 bucket used to read the source record.
 	 * @param {string} [opts.bucket] - Optionally override the S3 bucket used to store the destination record.
 	 * @param {Object} [opts.params] - Optionally specify parameters to the S3 API, for e.g. ACL and Storage Class. 
+	 * @param {boolean} [opts.dry=false] - Optionally do a dry run (take no action).
 	 * @returns {Promise<MetaResponse>} - A promise that resolves to a custom object.
 	 */
 	copy(opts, callback) {
@@ -338,6 +341,11 @@ class S3API {
 		params.Key = this.prefix + opts.key;
 		
 		this.logDebug(8, "Copying object: " + opts.sourceKey + " to: " + opts.key, params);
+		
+		if (opts.dry) {
+			this.logDebug(9, "Dry-run, returning faux success");
+			return process.nextTick( function() { callback(null, { dry: true }); } );
+		}
 		
 		let tracker = this.perf ? this.perf.begin('s3_copy') : null;
 		this.s3.send( new S3.CopyObjectCommand(params) )
@@ -370,6 +378,7 @@ class S3API {
 	 * @param {Object} [opts.sourceBucket] - Optionally override the S3 bucket used to read the source record.
 	 * @param {string} [opts.bucket] - Optionally override the S3 bucket used to store the destination record.
 	 * @param {Object} [opts.params] - Optionally specify parameters to the S3 API, for e.g. ACL and Storage Class. 
+	 * @param {boolean} [opts.dry=false] - Optionally do a dry run (take no action).
 	 * @returns {Promise<MetaResponse>} - A promise that resolves to a custom object.
 	 */
 	move(opts, callback) {
@@ -659,6 +668,7 @@ class S3API {
 	 * @param {Object} opts - The options object for the delete operation.
 	 * @param {string} opts.key - The key (S3 path) to delete.
 	 * @param {string} [opts.bucket] - Optionally override the S3 bucket.
+	 * @param {boolean} [opts.dry=false] - Optionally do a dry run (take no action).
 	 * @returns {Promise<MetaResponse>} - A promise that resolves to a custom object.
 	 */
 	delete(opts, callback) {
@@ -676,6 +686,11 @@ class S3API {
 		params.Key = this.prefix + opts.key;
 		
 		this.logDebug(8, "Deleting S3 Object: " + opts.key, params);
+		
+		if (opts.dry) {
+			this.logDebug(9, "Dry-run, returning faux success");
+			return process.nextTick( function() { callback(null, { dry: true }); } );
+		}
 		
 		// also remove from cache if enabled and key present
 		if (this.cache && opts.key.match(this.cache.keyMatch) && this.lru.has(opts.key)) {
@@ -712,6 +727,7 @@ class S3API {
 	 * @param {string} [opts.bucket] - Optionally override the S3 bucket.
 	 * @param {Object} [opts.params] - Optionally specify parameters to the S3 API, for e.g. ACL and Storage Class. 
 	 * @param {boolean} [opts.compress=false] - Optionally compress the file during upload.
+	 * @param {boolean} [opts.dry=false] - Optionally do a dry run (take no action).
 	 * @returns {Promise<MetaResponse>} - A promise that resolves to a custom object.
 	 */
 	uploadFile(opts, callback) {
@@ -738,6 +754,11 @@ class S3API {
 			
 			self.logDebug(8, "Uploading file: " + opts.key, { file: opts.localFile, size: stats.size });
 			
+			if (opts.dry) {
+				self.logDebug(9, "Dry-run, returning faux success");
+				return process.nextTick( function() { callback(null, { dry: true }); } );
+			}
+			
 			// streamize
 			opts.value = fs.createReadStream(opts.localFile);
 			
@@ -752,6 +773,7 @@ class S3API {
 	 * @param {string} opts.localFile - A path to the destination file on local disk.
 	 * @param {string} [opts.bucket] - Optionally override the S3 bucket.
 	 * @param {boolean} [opts.decompress=false] - Optionally decompress the file during download.
+	 * @param {boolean} [opts.dry=false] - Optionally do a dry run (take no action).
 	 * @returns {Promise<MetaResponse>} - A promise that resolves to a custom object.
 	 */
 	downloadFile(opts, callback) {
@@ -764,6 +786,11 @@ class S3API {
 		if (opts.localFile.match(/\/$/)) opts.localFile += Path.basename(opts.key); // copy filename from key
 		
 		this.logDebug(8, "Downloading file: " + opts.key, { file: opts.localFile });
+		
+		if (opts.dry) {
+			this.logDebug(9, "Dry-run, returning faux success");
+			return process.nextTick( function() { callback(null, { dry: true }); } );
+		}
 		
 		Tools.mkdirp( Path.dirname( Path.resolve(opts.localFile) ), function(err) {
 			if (err) {
@@ -816,6 +843,7 @@ class S3API {
 	 * @param {Object} [opts.params] - Optionally specify parameters to the S3 API, for e.g. ACL and Storage Class. 
 	 * @param {boolean} [opts.compress=false] - Optionally compress the files during upload.
 	 * @param {string} [opts.suffix] - Optionally append a suffix to every destination S3 key, e.g. `.gz` for compressed files.
+	 * @param {boolean} [opts.dry=false] - Optionally do a dry run (take no action).
 	 * @returns {Promise<ListResponse>} - A promise that resolves to a custom object.
 	 */
 	uploadFiles(opts, callback) {
@@ -861,6 +889,7 @@ class S3API {
 	 * @param {string} [opts.bucket] - Optionally override the S3 bucket.
 	 * @param {boolean} [opts.decompress=false] - Optionally decompress the files during download.
 	 * @param {RegExp} [opts.strip] - Optionally strip a suffix from every destination filename.
+	 * @param {boolean} [opts.dry=false] - Optionally do a dry run (take no action).
 	 * @returns {Promise<ListResponse>} - A promise that resolves to a custom object.
 	 */
 	downloadFiles(opts, callback) {
@@ -899,6 +928,7 @@ class S3API {
 	 * @param {(number|string)} [opts.older] - Optionally filter the S3 files based on their modification date.
 	 * @param {number} [opts.threads=1] - Optionally increase the threads to improve performance.
 	 * @param {string} [opts.bucket] - Optionally specify the S3 bucket where the folders reside.
+	 * @param {boolean} [opts.dry=false] - Optionally do a dry run (take no action).
 	 * @returns {Promise<ListResponse>} - A promise that resolves to a custom object.
 	 */
 	deleteFiles(opts, callback) {
@@ -930,6 +960,7 @@ class S3API {
 	 * @param {string} [opts.bucket] - Optionally override the S3 bucket.
 	 * @param {Object} [opts.params] - Optionally specify parameters to the S3 API, for e.g. ACL and Storage Class. 
 	 * @param {boolean} [opts.compress=false] - Optionally compress the buffer during upload.
+	 * @param {boolean} [opts.dry=false] - Optionally do a dry run (take no action).
 	 * @returns {Promise<MetaResponse>} - A promise that resolves to a custom object.
 	 */
 	putBuffer(opts, callback) {
@@ -944,6 +975,11 @@ class S3API {
 		if (!Buffer.isBuffer(opts.value)) return callback( new Error("The 'value' property must be a buffer object.") );
 		
 		this.logDebug(9, "Storing Buffer: " + opts.key + ' (' + opts.value.length + ' bytes)', opts.params);
+		
+		if (opts.dry) {
+			this.logDebug(9, "Dry-run, returning faux success");
+			return process.nextTick( function() { callback(null, { dry: true }); } );
+		}
 		
 		// convert buffer to stream
 		let buf = opts.value;
@@ -993,6 +1029,7 @@ class S3API {
 	 * @param {string} [opts.bucket] - Optionally override the S3 bucket.
 	 * @param {Object} [opts.params] - Optionally specify parameters to the S3 API, for e.g. ACL and Storage Class. 
 	 * @param {boolean} [opts.compress=false] - Optionally compress the stream during upload.
+	 * @param {boolean} [opts.dry=false] - Optionally do a dry run (take no action).
 	 * @returns {Promise<MetaResponse>} - A promise that resolves to a custom object.
 	 */
 	putStream(opts, callback) {
@@ -1018,6 +1055,11 @@ class S3API {
 		}
 		
 		this.logDebug(9, "Storing Stream: " + opts.key, params);
+		
+		if (opts.dry) {
+			this.logDebug(9, "Dry-run, returning faux success");
+			return process.nextTick( function() { callback(null, { dry: true }); } );
+		}
 		
 		if (opts.compress) {
 			self.logDebug(9, "Compressing stream with gzip");

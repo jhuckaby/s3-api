@@ -660,6 +660,11 @@ const app = {
 		}
 		else this.die('Unsupported archive format: ' + arch_file);
 		
+		if (args.dry) {
+			this.s3.logDebug(9, "Dry-run, returning faux success");
+			return;
+		}
+		
 		// reroute download to temp dir
 		args.localPath = Path.join( TEMP_DIR, 's3-temp-' + process.pid );
 		
@@ -732,6 +737,11 @@ const app = {
 		
 		// arch file needs to be absolute
 		arch_file = Path.resolve(arch_file);
+		
+		if (args.dry) {
+			this.s3.logDebug(9, "Dry-run, returning faux success");
+			return;
+		}
 		
 		// create temp dir
 		let temp_dir = Path.join( TEMP_DIR, 's3-temp-' + process.pid );
@@ -827,6 +837,11 @@ const app = {
 		}
 		else this.die('Unsupported archive format: ' + args.key);
 		
+		if (args.dry) {
+			this.s3.logDebug(9, "Dry-run, returning faux success");
+			return;
+		}
+		
 		// zip the local dir
 		try {
 			this.s3.logDebug(9, "Compressing archive", arch_cmd);
@@ -898,6 +913,11 @@ const app = {
 			arch_cmd = `${tar_bin} -zxvf "${arch_file}"`;
 		}
 		else this.die('Unsupported archive format: ' + args.key);
+		
+		if (args.dry) {
+			this.s3.logDebug(9, "Dry-run, returning faux success");
+			return;
+		}
 		
 		// download archive to temp location
 		args.localFile = arch_file;

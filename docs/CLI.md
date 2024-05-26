@@ -59,6 +59,7 @@ The following command-line arguments are shared across multiple commands:
 | `pretty` | Boolean | Optionally pretty-print JSON records and output.  Used by [put](#put), [update](#update) and [get](#get). |
 | `quiet` | Boolean | Suppress all output entirely (except for commands like [get](#get)). |
 | `verbose` | Boolean | Enable extra verbose output, for informational or troubleshooting purposes. |
+| `dry` | Boolean | Optionally enable "dry-run" mode, which will take no actual actions against S3 or the local filesystem. |
 
 These arguments should all be specified using a double-dash prefix, e.g. `--region us-west-1`.
 

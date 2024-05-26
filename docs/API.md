@@ -52,6 +52,7 @@ The class constructor accepts an object containing configuration properties.  Th
 | `logger` | Object | Optionally pass in a [pixl-logger](https://github.com/jhuckaby/pixl-logger) compatible logger here.  Or use [attachLogAgent()](#attachlogagent). |
 | `perf` | Object | Optionally pass in a [pixl-perf](https://github.com/jhuckaby/pixl-perf) compatible perf tracker here.  Or use [attachPerfAgent()](#attachperfagent). |
 | `cache` | Object | Optionally enable caching for JSON records.  See [Caching](https://github.com/jhuckaby/s3-api/blob/main/README.md#caching) for details. |
+| `dry` | Boolean | Optionally enable "dry-run" mode, which will take no actual actions against S3 or the local filesystem. |
 
 Example use:
 
