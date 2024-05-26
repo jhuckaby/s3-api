@@ -524,19 +524,22 @@ class S3API {
 				self.s3.send( new S3.ListObjectsV2Command(params) )
 					.then( function(data) {
 						let items = data.Contents || [];
-						for (let idx = 0, len = items.length; idx < len; idx++) {
-							let item = items[idx];
+						
+						items.forEach( function(item) {
 							let key = item.Key;
 							let bytes = item.Size;
 							let mtime = item.LastModified.getTime() / 1000;
 							let file = { key: key, size: bytes, mtime: mtime };
+							
+							// skip over 0-byte folder markers
+							if (!bytes && key.match(/\/$/)) return;
 							
 							// optional filter and filespec
 							if (opts.filter(file) && Path.basename(key).match(opts.filespec)) {
 								total_bytes += bytes;
 								files.push(file);
 							}
-						}
+						}); // foreach item
 						
 						// check for end of key list
 						if (!data.IsTruncated || !items.length) done = true;
