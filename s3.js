@@ -841,6 +841,7 @@ class S3API {
 	 * @param {string} opts.remotePath - The base S3 path to store files under.
 	 * @param {RegExp} [opts.filespec] - Optionally filter the local files using a regular expression, matched on the filenames.
 	 * @param {Function} [opts.filter] - Optionally provide a filter function to select which files to include.
+	 * @param {boolean} [opts.all=false] - Optionally include dotfiles (default is no).
 	 * @param {number} [opts.threads=1] - Optionally increase the threads to improve performance.
 	 * @param {string} [opts.bucket] - Optionally override the S3 bucket.
 	 * @param {Object} [opts.params] - Optionally specify parameters to the S3 API, for e.g. ACL and Storage Class. 

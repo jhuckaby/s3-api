@@ -597,6 +597,7 @@ The method accepts an object containing the following properties:
 | `remotePath` | String | **(Required)** The base S3 path to store files under.  This may be prepended with a `prefix` if set on the class instance. |
 | `filespec` | RegExp | Optionally filter the local files using a regular expression, applied to the filenames. |
 | `filter` | Function | Optionally provide a function to decide whether or not to include each file.  See below for usage. |
+| `all` | Boolean | Optionally include dotfiles (filenames that begin with a period) in the upload (the default is to skip them). |
 | `threads` | Integer | Optionally increase the threads to improve performance.  Defaults to `1`. |
 | `compress` | Boolean | Set this to `true` to automatically compress all files during upload.  Defaults to `false`.  See [Compression](https://github.com/jhuckaby/s3-api/blob/main/README.md#compression). |
 | `suffix` | String | Optionally append a suffix to every destination S3 key, e.g. `.gz` for compressed files. |

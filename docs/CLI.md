@@ -536,6 +536,7 @@ The `uploadFiles` command accepts the following optional arguments:
 | `older` | Mixed | Optionally filter files to those modified before a specified date, or delta time.  Dates should be parsable by JavaScript, delta times can be "7 days", etc. |
 | `larger` | Mixed | Optionally filter files to those larger than a specified size, which can be raw bytes, or a string such as "50K", "500MB", "32GB", "1TB", etc. |
 | `smaller` | Mixed | Optionally filter files to those smaller than a specified size, which can be raw bytes, or a string such as "50K", "500MB", "32GB", "1TB", etc. |
+| `all` | Boolean | Optionally include dotfiles (filenames that begin with a period) in the upload (the default is to skip them). |
 | `threads` | Integer | Optionally increase concurrency to improve performance.  Defaults to `1` thread. |
 | `compress` | Boolean | Automatically compress all files using gzip during upload.  Disabled by default. |
 | `gzip` | Object | Control the gzip compression settings.  See [Compression](#compression). |
