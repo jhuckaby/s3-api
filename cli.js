@@ -15,7 +15,7 @@ const pkg = require('./package.json');
 cli.global();
 
 // optional config file for args defaults
-var config_file = Path.join( process.env.HOME, '.s3-config.json' );
+const config_file = Path.join( process.env.HOME, '.s3-config.json' );
 if (fs.existsSync(config_file)) Tools.mergeHashInto(cli.args, JSON.parse( fs.readFileSync(config_file, 'utf8') ));
 
 // optional log file
@@ -29,23 +29,23 @@ const TEMP_DIR = cli.args.tempDir || os.tmpdir();
 delete cli.args.tempDir;
 
 // coerce true/false into booleans
-for (var key in cli.args) {
+for (let key in cli.args) {
 	if (cli.args[key] === 'true') cli.args[key] = true;
 	else if (cli.args[key] === 'false') cli.args[key] = false;
 }
 
 // allow args to be dot.path.syntax
-var args = {};
-for (var key in cli.args) {
+let args = {};
+for (let key in cli.args) {
 	Tools.setPath( args, key, cli.args[key] );
 }
 
 if (!args.other || !args.other.length || args.help || args.h) args.other = ['help'];
-var cmd = args.other.shift();
+let cmd = args.other.shift();
 
 const S3 = require('.');
 
-var CMD_HELP_TEXT = {
+const CMD_HELP_TEXT = {
 	docs: `s3 docs`,
 	
 	// put: `s3 put --bucket my-bucket --key users/kermit.json --value.animal "frog" --value.color "green"`,
@@ -112,15 +112,15 @@ var CMD_HELP_TEXT = {
 	restoreBackup: `s3 restoreBackup s3://my-bucket/backups/mybackup-2024-05-22.zip /path/to/files`
 };
 
-var app = {
+const app = {
 	
 	async run() {
 		// main entry point
-		var self = this;
+		let self = this;
 		
 		// copy some args over to S3 API
-		var s3_args = {};
-		for (var key in args) {
+		let s3_args = {};
+		for (let key in args) {
 			if (key.match(/^(region|bucket|credentials|prefix|params|gzip|timeout|connectTimeout|retries)$/)) {
 				s3_args[key] = args[key];
 				delete args[key];
@@ -175,7 +175,7 @@ var app = {
 			print("\n");
 			
 			try {
-				var result = await this.s3[cmd](args);
+				let result = await this.s3[cmd](args);
 				if (result && result.meta && result.meta.Body) delete result.meta.Body; // way too verbose
 				println( "\n" + cli.jsonPretty(result || false) );
 			}
@@ -206,7 +206,7 @@ var app = {
 	shiftS3Spec(bucket_name = 'bucket', key_name = 'key') {
 		// parse s3 spec such as: s3://my-bucket/users/kermit.json
 		if (!args.other || !args.other.length) return false;
-		var spec = args.other.shift() || null;
+		let spec = args.other.shift() || null;
 		if (!spec) return false;
 		
 		if (spec.match(/^s3\:\/\/([^\/]+)\/(.*)$/)) {
@@ -222,7 +222,7 @@ var app = {
 	shiftOther(key_name) {
 		// shift value from other array
 		if (!args.other || !args.other.length) return false;
-		var value = args.other.shift() || null;
+		let value = args.other.shift() || null;
 		if (!value) return false;
 		
 		args[key_name] = value;
@@ -232,7 +232,7 @@ var app = {
 	addMultiFilter() {
 		// add optional filter for include, exclude, newer, older, larger and smaller
 		// used for uploading, downloading and deleting remote files
-		var { include, exclude, newer, older, larger, smaller } = args;
+		let { include, exclude, newer, older, larger, smaller } = args;
 		if (!include && !exclude && !newer && !older && !larger && !smaller) return;
 		
 		if (include) include = new RegExp(include);
@@ -279,7 +279,7 @@ var app = {
 		println( gray(JSON.stringify( { region: this.s3.region, ...args } )) + "\n" );
 		
 		try {
-			var result = await this.s3[cmd](args);
+			let result = await this.s3[cmd](args);
 			if (result && result.meta && result.meta.Body) delete result.meta.Body; // way too verbose
 			println( "\n" + cli.jsonPretty(result || false) );
 		}
@@ -294,26 +294,26 @@ var app = {
 	
 	async cmd_help() {
 		// show quick help
-		var cmd = (args.other && args.other.length) ? args.other.shift() : '';
-		if (cmd) {
+		let hcmd = (args.other && args.other.length) ? args.other.shift() : '';
+		if (hcmd) {
 			// quick help for specific command
-			if (!CMD_HELP_TEXT[cmd]) this.die("Unknown command: " + cmd);
-			var text = CMD_HELP_TEXT[cmd];
-			println( "\n" + yellow.bold(cmd + ':') + " " + green(text) );
+			if (!CMD_HELP_TEXT[hcmd]) this.die("Unknown command: " + hcmd);
+			let text = CMD_HELP_TEXT[hcmd];
+			println( "\n" + yellow.bold(hcmd + ':') + " " + green(text) );
 		}
 		else {
 			// quick help for all commands
 			print("\n");
-			Object.keys(CMD_HELP_TEXT).forEach( function(cmd) {
-				var text = CMD_HELP_TEXT[cmd];
-				println( yellow.bold(cmd + ':') + " " + green(text) );
+			Object.keys(CMD_HELP_TEXT).forEach( function(ecmd) {
+				let text = CMD_HELP_TEXT[ecmd];
+				println( yellow.bold(ecmd + ':') + " " + green(text) );
 			} );
 		}
 	},
 	
 	async cmd_docs() {
 		// emit readme to stdout
-		var docs = fs.readFileSync(Path.join( __dirname, 'docs/CLI.md' ), 'utf8');
+		let docs = fs.readFileSync(Path.join( __dirname, 'docs/CLI.md' ), 'utf8');
 		println( "\n" + docs );
 	},
 	
@@ -324,7 +324,7 @@ var app = {
 		this.shiftS3Spec('bucket', 'key') || this.dieUsage(this.cmd);
 		
 		// allow json as inline string (optional)
-		var raw_json = args.other.shift() || '';
+		let raw_json = args.other.shift() || '';
 		if (raw_json) {
 			try { args.value = JSON.parse(raw_json); }
 			catch (err) { this.die(err); }
@@ -349,7 +349,7 @@ var app = {
 		
 		// convert CLI updates to proper format for API
 		args.updates = {};
-		for (var key in cli.args) {
+		for (let key in cli.args) {
 			if (key.match(/^updates?[\.\/](.+)$/)) {
 				if (cli.args[key] === '_DELETE_') cli.args[key] = undefined;
 				args.updates[ RegExp.$1 ] = cli.args[key];
@@ -371,7 +371,7 @@ var app = {
 		println( gray(JSON.stringify( { region: this.s3.region, ...args } )) + "\n" );
 		
 		try {
-			var result = await this.s3[cmd](args);
+			let result = await this.s3[cmd](args);
 			if (result && result.meta && result.meta.Body) delete result.meta.Body; // way too verbose
 			
 			if (args.pretty) println( "\n" + cli.jsonPretty( cli.args.verbose ? result : result.data ) );
@@ -393,7 +393,7 @@ var app = {
 		println( gray(JSON.stringify( { region: this.s3.region, ...args } )) + "\n" );
 		
 		try {
-			var { data, meta } = await this.s3.getStream(args);
+			let { data, meta } = await this.s3.getStream(args);
 			
 			// print meta in debug mode
 			if (cli.args.verbose) {
@@ -428,12 +428,12 @@ var app = {
 		println( gray(JSON.stringify( { region: this.s3.region, ...args } )) + "\n" );
 		
 		try {
-			var result = await this.s3[cmd](args);
+			let result = await this.s3[cmd](args);
 			if (result && result.meta && result.meta.Body) delete result.meta.Body; // way too verbose
 			
 			if (args.json) println( "\n" + cli.jsonPretty(result || false) );
 			else {
-				var rows = [
+				let rows = [
 					["File", "Size", "Last Modified"]
 				];
 				if (result && result.files) result.files.forEach( function(file) {
@@ -473,7 +473,7 @@ var app = {
 		println( gray(JSON.stringify( { region: this.s3.region, ...args } )) + "\n" );
 		
 		try {
-			var result = await this.s3[cmd](args);
+			let result = await this.s3[cmd](args);
 			if (result && result.meta && result.meta.Body) delete result.meta.Body; // way too verbose
 			
 			if (args.json) println( "\n" + cli.jsonPretty(result || false) );
@@ -526,12 +526,12 @@ var app = {
 		println( gray(JSON.stringify( { region: this.s3.region, ...args } )) + "\n" );
 		
 		try {
-			var result = await this.s3[cmd](); // special call convention -- no args
+			let result = await this.s3[cmd](); // special call convention -- no args
 			if (result && result.meta && result.meta.Body) delete result.meta.Body; // way too verbose
 			
 			if (args.json) println( "\n" + cli.jsonPretty(result || false) );
 			else {
-				var rows = [ ["Bucket Name"] ].concat( result.buckets.map( function(bucket) { return [bucket]; } ) );
+				let rows = [ ["Bucket Name"] ].concat( result.buckets.map( function(bucket) { return [bucket]; } ) );
 				cli.print( 
 					"\n" + cli.table(rows, {
 						indent: 1,
@@ -632,14 +632,14 @@ var app = {
 		// download s3 folder to temp dir, then zip or tar it up
 		// s3 snapshot s3://my-bucket/s3dir/images /path/to/backup-[yyyy]-[mm]-[dd].zip
 		// { remotePath, localFile }
-		var self = this;
+		let self = this;
 		this.shiftS3Spec('bucket', 'remotePath') || this.dieUsage(this.cmd);
 		this.shiftOther('localFile') || this.dieUsage(this.cmd);
 		
 		delete args.other;
 		println( gray(JSON.stringify( { region: this.s3.region, ...args } )) + "\n" );
 		
-		var arch_file = args.localFile || this.dieUsage(this.cmd);
+		let arch_file = args.localFile || this.dieUsage(this.cmd);
 		delete args.localFile;
 		
 		// allow archiveFile to have date/time placeholders, e.g. `my-backup-[yyyy]-[mm]-[dd].zip`
@@ -649,15 +649,15 @@ var app = {
 		arch_file = Path.resolve(arch_file);
 		
 		// server must have appropriate binary somewhere in PATH or common dirs
-		var arch_cmd = '';
+		let arch_cmd = '';
 		if (arch_file.match(/\.zip$/i)) {
-			var zip_bin = Tools.findBinSync('zip') || this.die('Cannot locate `zip` binary.');
-			var zip_args = args.zipArgs || '-r';
+			let zip_bin = Tools.findBinSync('zip') || this.die('Cannot locate `zip` binary.');
+			let zip_args = args.zipArgs || '-r';
 			arch_cmd = `${zip_bin} ${zip_args} "${arch_file}" .`;
 		}
 		else if (arch_file.match(/\.tar(\.gz)?$/i)) {
-			var tar_bin = Tools.findBinSync('tar') || this.die('Cannot locate `tar` binary.');
-			var tar_args = args.tarArgs || (arch_file.match(/\.gz$/i) ? '-zcvf' : '-cvf');
+			let tar_bin = Tools.findBinSync('tar') || this.die('Cannot locate `tar` binary.');
+			let tar_args = args.tarArgs || (arch_file.match(/\.gz$/i) ? '-zcvf' : '-cvf');
 			arch_cmd = `${tar_bin} ${tar_args} "${arch_file}" .`;
 		}
 		else this.die('Unsupported archive format: ' + arch_file);
@@ -684,7 +684,7 @@ var app = {
 		// zip the dir
 		try {
 			this.s3.logDebug(9, "Compressing archive", arch_cmd);
-			var output = cp.execSync( arch_cmd + ' 2>&1', {
+			let output = cp.execSync( arch_cmd + ' 2>&1', {
 				cwd: args.localPath,
 				maxBuffer: 1024 * 1024 * 32
 			} );
@@ -702,7 +702,7 @@ var app = {
 		
 		// optionally expire old snaps
 		if (args.expire) {
-			var expire_at = Tools.timeNow(true) - Tools.getSecondsFromText(args.expire);
+			let expire_at = Tools.timeNow(true) - Tools.getSecondsFromText(args.expire);
 			
 			Tools.findFilesSync( Path.dirname(arch_file), {
 				recurse: false,
@@ -729,14 +729,14 @@ var app = {
 		delete args.other;
 		println( gray(JSON.stringify( { region: this.s3.region, ...args } )) + "\n" );
 		
-		var arch_file = args.localFile || this.dieUsage(this.cmd);
+		let arch_file = args.localFile || this.dieUsage(this.cmd);
 		delete args.localFile;
 		
 		// arch file needs to be absolute
 		arch_file = Path.resolve(arch_file);
 		
 		// create temp dir
-		var temp_dir = Path.join( TEMP_DIR, 's3-temp-' + process.pid );
+		let temp_dir = Path.join( TEMP_DIR, 's3-temp-' + process.pid );
 		try {
 			Tools.mkdirp.sync( temp_dir );
 		}
@@ -745,13 +745,13 @@ var app = {
 		}
 		
 		// expand archive into temp dir
-		var arch_cmd = '';
+		let arch_cmd = '';
 		if (arch_file.match(/\.zip$/i)) {
-			var unzip_bin = Tools.findBinSync('unzip') || this.die('Cannot locate `unzip` binary.');
+			let unzip_bin = Tools.findBinSync('unzip') || this.die('Cannot locate `unzip` binary.');
 			arch_cmd = `${unzip_bin} "${arch_file}"`;
 		}
 		else if (arch_file.match(/\.tar\.gz$/i)) {
-			var tar_bin = Tools.findBinSync('tar') || this.die('Cannot locate `tar` binary.');
+			let tar_bin = Tools.findBinSync('tar') || this.die('Cannot locate `tar` binary.');
 			arch_cmd = `${tar_bin} -zxvf "${arch_file}"`;
 		}
 		else this.die('Unsupported archive format: ' + arch_file);
@@ -759,7 +759,7 @@ var app = {
 		// do the expansion
 		try {
 			this.s3.logDebug(9, "Expanding archive", arch_cmd);
-			var output = cp.execSync( arch_cmd + ' 2>&1', {
+			let output = cp.execSync( arch_cmd + ' 2>&1', {
 				cwd: temp_dir,
 				maxBuffer: 1024 * 1024 * 32
 			} );
@@ -806,25 +806,25 @@ var app = {
 		delete args.other;
 		println( gray(JSON.stringify( { region: this.s3.region, ...args } )) + "\n" );
 		
-		var src_path = args.localPath;
+		let src_path = args.localPath;
 		delete args.localPath;
 		
 		// allow s3 key to have date/time placeholders, e.g. `my-backup-[yyyy]-[mm]-[dd].zip`
 		args.key = Tools.formatDate( Tools.timeNow(), args.key );
 		
-		var arch_file = Path.join( TEMP_DIR, 's3-temp-' + process.pid );
-		var arch_cmd = '';
+		let arch_file = Path.join( TEMP_DIR, 's3-temp-' + process.pid );
+		let arch_cmd = '';
 		
 		if (args.key.match(/(\.zip)$/i)) {
 			arch_file += RegExp.$1;
-			var zip_bin = Tools.findBinSync('zip') || this.die('Cannot locate `zip` binary.');
-			var zip_args = args.zipArgs || '-r';
+			let zip_bin = Tools.findBinSync('zip') || this.die('Cannot locate `zip` binary.');
+			let zip_args = args.zipArgs || '-r';
 			arch_cmd = `${zip_bin} ${zip_args} "${arch_file}" .`;
 		}
 		else if (args.key.match(/(\.tar|\.tar\.gz)$/i)) {
 			arch_file += RegExp.$1;
-			var tar_bin = Tools.findBinSync('tar') || this.die('Cannot locate `tar` binary.');
-			var tar_args = args.tarArgs || (arch_file.match(/\.gz$/i) ? '-zcvf' : '-cvf');
+			let tar_bin = Tools.findBinSync('tar') || this.die('Cannot locate `tar` binary.');
+			let tar_args = args.tarArgs || (arch_file.match(/\.gz$/i) ? '-zcvf' : '-cvf');
 			arch_cmd = `${tar_bin} ${tar_args} "${arch_file}" .`;
 		}
 		else this.die('Unsupported archive format: ' + args.key);
@@ -832,7 +832,7 @@ var app = {
 		// zip the local dir
 		try {
 			this.s3.logDebug(9, "Compressing archive", arch_cmd);
-			var output = cp.execSync( arch_cmd + ' 2>&1', {
+			let output = cp.execSync( arch_cmd + ' 2>&1', {
 				cwd: src_path,
 				maxBuffer: 1024 * 1024 * 32
 			} );
@@ -883,19 +883,19 @@ var app = {
 		delete args.other;
 		println( gray(JSON.stringify( { region: this.s3.region, ...args } )) + "\n" );
 		
-		var dest_path = Path.resolve(args.localPath);
+		let dest_path = Path.resolve(args.localPath);
 		delete args.localPath;
 		
-		var arch_file = Path.join( TEMP_DIR, 's3-temp-' + process.pid );
-		var arch_cmd = '';
+		let arch_file = Path.join( TEMP_DIR, 's3-temp-' + process.pid );
+		let arch_cmd = '';
 		
 		if (args.key.match(/\.zip$/i)) {
-			var unzip_bin = Tools.findBinSync('unzip') || this.die('Cannot locate `unzip` binary.');
+			let unzip_bin = Tools.findBinSync('unzip') || this.die('Cannot locate `unzip` binary.');
 			arch_file += '.zip';
 			arch_cmd = `${unzip_bin} -o "${arch_file}"`;
 		}
 		else if (args.key.match(/\.tar\.gz$/i)) {
-			var tar_bin = Tools.findBinSync('tar') || this.die('Cannot locate `tar` binary.');
+			let tar_bin = Tools.findBinSync('tar') || this.die('Cannot locate `tar` binary.');
 			arch_file += '.tar.gz';
 			arch_cmd = `${tar_bin} -zxvf "${arch_file}"`;
 		}
@@ -925,7 +925,7 @@ var app = {
 		// expand archive into dir
 		try {
 			this.s3.logDebug(9, "Expanding archive", arch_cmd);
-			var output = cp.execSync( arch_cmd + ' 2>&1', {
+			let output = cp.execSync( arch_cmd + ' 2>&1', {
 				cwd: dest_path,
 				maxBuffer: 1024 * 1024 * 32
 			} );
