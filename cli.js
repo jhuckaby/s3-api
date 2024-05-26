@@ -371,7 +371,7 @@ const app = {
 				println( yellow.bold(ecmd + ':') + " " + green(text) );
 			} );
 			
-			println("\n" + green.bold("Please type " + cyan.bold("`s3 help COMMAND`") + " for details on a specific command.") );
+			println("\n" + green.bold("Type " + cyan.bold("`s3 help COMMAND`") + " for details on a specific command.") );
 		}
 	},
 	
