@@ -1,8 +1,11 @@
 {
 	"name": "s3-api",
-	"version": "1.0.1",
+	"version": "2.0.0",
 	"description": "A simple, light wrapper around the AWS S3 v3 API.",
 	"main": "s3.js",
+	"bin": {
+		"s3": "cli.js"
+	},
 	"scripts": {
 		"test": "pixl-unit test/test.js --verbose"
 	},
@@ -15,7 +18,8 @@
 		"fast-stream-to-buffer": "1.0.0",
 		"pixl-cache": "^1.0.6",
 		"pixl-class-util": "^1.0.0",
-		"pixl-tools": "^1.0.29"
+		"pixl-tools": "^1.0.29",
+		"pixl-cli": "^1.0.17"
 	},
 	"devDependencies": {
 		"pixl-unit": "^1.0.0"

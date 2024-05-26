@@ -1,52 +1,3 @@
-<details><summary>Table of Contents</summary>
-
-<!-- toc -->
-* [Overview](#overview)
-	* [Features](#features)
-	* [Setup](#setup)
-	* [API Usage](#api-usage)
-		+ [Key / Value Store](#key--value-store)
-			- [Caching](#caching)
-		+ [Using Files](#using-files)
-			- [Multiple Files](#multiple-files)
-			- [Compression](#compression)
-			- [Threads](#threads)
-		+ [Pinging Objects](#pinging-objects)
-		+ [Listing Objects](#listing-objects)
-		+ [Deleting Objects](#deleting-objects)
-		+ [Using Buffers](#using-buffers)
-		+ [Using Streams](#using-streams)
-		+ [Custom S3 Params](#custom-s3-params)
-	* [Logging](#logging)
-		+ [Console](#console)
-	* [Performance Tracking](#performance-tracking)
-	* [API Reference](#api-reference)
-		+ [constructor](#constructor)
-		+ [attachLogAgent](#attachlogagent)
-		+ [attachPerfAgent](#attachperfagent)
-		+ [put](#put)
-		+ [get](#get)
-		+ [head](#head)
-		+ [list](#list)
-		+ [listFolders](#listfolders)
-		+ [listBuckets](#listbuckets)
-		+ [walk](#walk)
-		+ [copy](#copy)
-		+ [move](#move)
-		+ [delete](#delete)
-		+ [uploadFile](#uploadfile)
-		+ [downloadFile](#downloadfile)
-		+ [uploadFiles](#uploadfiles)
-		+ [downloadFiles](#downloadfiles)
-		+ [deleteFiles](#deletefiles)
-		+ [putBuffer](#putbuffer)
-		+ [getBuffer](#getbuffer)
-		+ [putStream](#putstream)
-		+ [getStream](#getstream)
-- [License](#license)
-
-</details>
-
 ## Overview
 
 The **s3-api** module provides a simple, light wrapper around the AWS S3 API (version 3).  It greatly simplifies things like uploading and downloading files to/from S3, as well as treating it like a key/value store.
@@ -64,13 +15,61 @@ The **s3-api** module provides a simple, light wrapper around the AWS S3 API (ve
 - Automatic retries with exponential backoff.
 - Logging and perf helpers.
 - Optional caching layer for JSON files.
+- Full-featured command-line interface (CLI).
+
+## Table of Contents
+
+The documentation is split up across these files:
+
+- &rarr; **[Main Docs](https://github.com/jhuckaby/s3-api/blob/main/README.md)** *(You are here)*
+- &rarr; **[API Reference](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md)**
+- &rarr; **[CLI Reference](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md)**
+
+Here is the table of contents for this document:
+
+<!-- toc -->
+- [Setup](#setup)
+- [API Usage](#api-usage)
+	* [Key Value Store](#key-value-store)
+		+ [Caching](#caching)
+	* [Using Files](#using-files)
+		+ [Multiple Files](#multiple-files)
+		+ [Compression](#compression)
+		+ [Threads](#threads)
+	* [Pinging Objects](#pinging-objects)
+	* [Listing Objects](#listing-objects)
+	* [Deleting Objects](#deleting-objects)
+	* [Using Buffers](#using-buffers)
+	* [Using Streams](#using-streams)
+	* [Custom S3 Params](#custom-s3-params)
+	* [Logging](#logging)
+		+ [Console](#console)
+	* [Performance Tracking](#performance-tracking)
+	* [Unit Tests](#unit-tests)
+- [CLI Usage](#cli-usage)
+	* [Installation](#installation)
+	* [Config File](#config-file)
+	* [Key Value JSON](#key-value-json)
+	* [File Management](#file-management)
+	* [Listing](#listing)
+	* [Snapshots](#snapshots)
+	* [Backups](#backups)
+	* [CLI Logging](#cli-logging)
+	* [CLI Reference](#cli-reference)
+- [License](#license)
 
 ## Setup
 
 Use [npm](https://www.npmjs.com/) to install the module locally:
 
-```
+```sh
 npm install s3-api
+```
+
+Install the module globally to use the CLI:
+
+```sh
+npm install -g s3-api
 ```
 
 ## API Usage
@@ -92,7 +91,7 @@ let s3 = new S3({
 
 The class constructor expects an object, which accepts several different properties (see below).  At the very least you should specify a `bucket` and a `prefix`.  You may also need to specify `credentials` as well, depending on your setup.  The prefix is prepended onto all S3 keys, and is a great way to keep your app's S3 data in an isolated area when sharing a bucket.
 
-Once you have your class instance created, call one of the available API methods (see [API Reference](#api-reference) for list).  Example:
+Once you have your class instance created, call one of the available API methods (see [API Reference](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md) for list).  Example:
 
 ```js
 try {
@@ -121,9 +120,9 @@ Please note that the local variables **must** be named exactly as shown above (e
 
 It is highly recommended that you instantiate the S3 API class one time, and reuse it for the lifetime of your application.  The reason is, the library reuses network connections to reduce S3 lag.  Each time you instantiate a new class it has to open new connections.
 
-### Key / Value Store
+### Key Value Store
 
-If you want to use S3 as a key/value store, then this is the library for you.  The [put()](#put) and [get()](#get) API calls store and fetch objects, serialized to/from JSON behind the scenes.  Example:
+If you want to use S3 as a key/value store, then this is the library for you.  The [put()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#put) and [get()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#get) API calls store and fetch objects, serialized to/from JSON behind the scenes.  Example:
 
 ```js
 try {
@@ -139,7 +138,7 @@ catch(err) {
 }
 ```
 
-See [put()](#put) and [get()](#get) for more details.
+See [put()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#put) and [get()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#get) for more details.
 
 #### Caching
 
@@ -157,7 +156,7 @@ let s3 = new S3({
 });
 ```
 
-This would cache all JSON files fetched using [get()](#get), and stored using [put()](#put), in memory for up to an hour (3600 seconds).  You can also specify other limits including total cache keys, and limit to specific S3 keys by regular expression:
+This would cache all JSON files fetched using [get()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#get), and stored using [put()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#put), in memory for up to an hour (3600 seconds).  You can also specify other limits including total cache keys, and limit to specific S3 keys by regular expression:
 
 ```js
 let s3 = new S3({
@@ -173,9 +172,9 @@ let s3 = new S3({
 
 This would limit the cache objects to 1 hour, and 1,000 total items (oldest keys will be expunged), and also only cache S3 keys that match the regular expression `/^MYAPP\/MYDIR/`.
 
-Note that storing records via [put()](#put) will **always** go to S3.  This is a read cache, not a write cache.  However, objects stored to S3 via [put()](#put) may *also* be stored in the cache, if the key matches your `ketMatch` config property.
+Note that storing records via [put()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#put) will **always** go to S3.  This is a read cache, not a write cache.  However, objects stored to S3 via [put()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#put) may *also* be stored in the cache, if the key matches your `ketMatch` config property.
 
-Remember that caching **only** happens for JSON records fetched using [get()](#get), and stored using [put()](#put).  It does **not** happen for files, buffers or streams.
+Remember that caching **only** happens for JSON records fetched using [get()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#get), and stored using [put()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#put).  It does **not** happen for files, buffers or streams.
 
 ### Using Files
 
@@ -196,7 +195,7 @@ catch(err) {
 
 Streams are always used behind the scenes, so this can handle extremely large files without using significant memory.  When downloading, the parent directories for the destination file will automatically be created if needed.
 
-See [uploadFile()](#uploadfile) and [downloadFile()](#downloadfile) for more details.
+See [uploadFile()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#uploadfile) and [downloadFile()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#downloadfile) for more details.
 
 #### Multiple Files
 
@@ -230,7 +229,7 @@ catch(err) {
 }
 ```
 
-This would only upload and download files with names ending in `.gif`.  Note that the `filespec` only matches filenames, not directory paths.  See [uploadFiles()](#uploadfiles) and [downloadFiles()](#downloadfiles) for more details.
+This would only upload and download files with names ending in `.gif`.  Note that the `filespec` only matches filenames, not directory paths.  See [uploadFiles()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#uploadfiles) and [downloadFiles()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#downloadfiles) for more details.
 
 #### Compression
 
@@ -309,7 +308,7 @@ However, please be careful when using multiple threads with compression.  All gz
 
 ### Pinging Objects
 
-To "ping" an object is to quickly check for its existence and fetch basic information about it, without downloading the full contents.  This is typically called "head" in HTTP parlance (i.e. "HTTP HEAD"), and thus the S3 API call is named [head()](#head).  Example:
+To "ping" an object is to quickly check for its existence and fetch basic information about it, without downloading the full contents.  This is typically called "head" in HTTP parlance (i.e. "HTTP HEAD"), and thus the S3 API call is named [head()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#head).  Example:
 
 ```js
 try {
@@ -326,7 +325,7 @@ The `meta` object returned will have the object's size in bytes (`size`), and it
 
 ### Listing Objects
 
-To generate a listing of remote objects on S3 under a specific key prefix, use the [list()](#list) method:
+To generate a listing of remote objects on S3 under a specific key prefix, use the [list()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#list) method:
 
 ```js
 try {
@@ -339,9 +338,9 @@ catch (err) {
 }
 ```
 
-This will list all the objects on S3 with a starting key prefix of `s3dir`, returning the array of files and total bytes used.  The [list()](#list) call traverses nested "directories" on S3, and also automatically manages "paging" through the results, so it returns them all in one single array (S3 only allows 1,000 objects per call, hence the need for pagination).
+This will list all the objects on S3 with a starting key prefix of `s3dir`, returning the array of files and total bytes used.  The [list()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#list) call traverses nested "directories" on S3, and also automatically manages "paging" through the results, so it returns them all in one single array (S3 only allows 1,000 objects per call, hence the need for pagination).
 
-The `files` array will contain an object for each object found, with `key`, `size` and `mtime` properties.  See [list()](#list) below for more details.
+The `files` array will contain an object for each object found, with `key`, `size` and `mtime` properties.  See [list()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#list) below for more details.
 
 To limit which objects are included in the listing, you can specify a `filespec` property:
 
@@ -373,7 +372,7 @@ catch (err) {
 
 ### Deleting Objects
 
-To delete an object from S3, simply call [delete()](#delete) and specify the S3 `key`.  Example:
+To delete an object from S3, simply call [delete()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#delete) and specify the S3 `key`.  Example:
 
 ```js
 try {
@@ -385,7 +384,7 @@ catch (err) {
 }
 ```
 
-To delete *multiple* objects in one call, use the [deleteFiles()](#deletefiles) method.  You can then set `remotePath` to specify a starting path, and optionally `filespec` to limit which files are deleted.  Example:
+To delete *multiple* objects in one call, use the [deleteFiles()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#deletefiles) method.  You can then set `remotePath` to specify a starting path, and optionally `filespec` to limit which files are deleted.  Example:
 
 ```js
 try {
@@ -397,11 +396,11 @@ catch (err) {
 }
 ```
 
-Please note that [deleteFiles()](#deletefiles) will recursively scan nested "directories" on S3, so use with extreme care.
+Please note that [deleteFiles()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#deletefiles) will recursively scan nested "directories" on S3, so use with extreme care.
 
 ### Using Buffers
 
-If you would rather deal with buffers instead of files, the S3 API library supports low-level [putBuffer()](#putbuffer) and [getBuffer()](#getbuffer) calls.  This is useful if you already have a file's contents loaded into memory.  Example:
+If you would rather deal with buffers instead of files, the S3 API library supports low-level [putBuffer()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#putbuffer) and [getBuffer()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#getbuffer) calls.  This is useful if you already have a file's contents loaded into memory.  Example:
 
 ```js
 let buf = fs.readFileSync( '/path/to/image.gif' );
@@ -422,7 +421,7 @@ Remember, buffers are all held in memory, so beware of large objects that could 
 
 ### Using Streams
 
-Using streams is the preferred way of dealing with large objects, as they use very little memory.  The API library provides [putStream()](#putstream) and [getStream()](#getstream) calls for your convenience.  Here is an example of uploading a stream:
+Using streams is the preferred way of dealing with large objects, as they use very little memory.  The API library provides [putStream()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#putstream) and [getStream()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#getstream) calls for your convenience.  Here is an example of uploading a stream:
 
 ```js
 let readStream = fs.createReadStream( '/path/to/image.gif' );
@@ -457,13 +456,13 @@ catch (err) {
 }
 ```
 
-Note that [putStream()](#putstream) will completely upload the entire stream to completion before returning, whereas [getStream()](#getstream) simply *starts* a stream, and returns a handle to you for piping or reading.
+Note that [putStream()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#putstream) will completely upload the entire stream to completion before returning, whereas [getStream()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#getstream) simply *starts* a stream, and returns a handle to you for piping or reading.
 
 Both stream methods can automatically compress or decompress with gzip if desired.  Simply include a `compress` property and set it to true for upload compression, or a `decompress` property set to true for download decompression.
 
 ### Custom S3 Params
 
-All of the upload related calls (i.e. [put()](#put), [uploadFile()](#uploadfile), [uploadFiles()](#uploadfiles), [putBuffer()](#putbuffer) and [putStream()](#putstream)) accept an optional `params` object.  This allows you specify options that are passed directly to the AWS S3 API, for things like ACL and Storage Class.  Example:
+All of the upload related calls (i.e. [put()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#put), [update()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#update), [uploadFile()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#uploadfile), [uploadFiles()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#uploadfiles), [putBuffer()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#putbuffer) and [putStream()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#putstream)) accept an optional `params` object.  This allows you specify options that are passed directly to the AWS S3 API, for things like ACL and Storage Class.  Example:
 
 ```js
 let opts = {
@@ -484,7 +483,16 @@ catch(err) {
 }
 ```
 
-This would set the ACL to `public-read` (see [AWS - Canned ACL](https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl)), and the S3 storage class to "Infrequently Accessed" (a cheaper storage tier with reduced redundancy and performance -- see [AWS - Storage Classes](https://docs.aws.amazon.com/AmazonS3/latest/userguide/storage-class-intro.html)).
+This would set the ACL to `public-read` (see [AWS - Canned ACL](https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl)), and the S3 storage class to "Infrequently Accessed" (a cheaper storage tier with reduced redundancy and performance -- see [AWS - Storage Classes](https://docs.aws.amazon.com/AmazonS3/latest/userguide/storage-class-intro.html)).  As of this writing, the supported storage class names are:
+
+- STANDARD
+- REDUCED_REDUNDANCY
+- STANDARD_IA
+- ONEZONE_IA
+- INTELLIGENT_TIERING
+- GLACIER
+- DEEP_ARCHIVE
+- GLACIER_IR
 
 If you are uploading files to a S3 bucket that is hosting a static website, then you can use `params` to bake in headers like `Content-Type` and `Cache-Control`.  Example:
 
@@ -530,9 +538,9 @@ catch(err) {
 
 When `params` are specified in both places, they are merged together, and the properties in the API call take precedence over those defined in the class instance.
 
-For a complete list of all the properties you can specify in `params`, see the [AWS - PutObjectRequest](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-s3/interfaces/putobjectrequest.html) docs.
+For a complete list of all the properties you can specify in `params`, see the [AWS - PutObjectRequest](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-s3/Interface/PutObjectRequest/) docs.
 
-## Logging
+### Logging
 
 You can optionally attach a [pixl-logger](https://github.com/jhuckaby/pixl-logger) compatible logger to the API class, which can log all requests and responses, as well as errors.  Example:
 
@@ -560,7 +568,7 @@ Debug log entries are logged at levels 8 and 9, with the `component` column set 
 
 In all cases, a verbose error description will be provided in the `msg` column.
 
-### Console
+#### Console
 
 To log everything to the console, you can simulate a [pixl-logger](https://github.com/jhuckaby/pixl-logger) compatible logger like this:
 
@@ -575,7 +583,7 @@ s3.attachLogAgent( {
 } );
 ```
 
-## Performance Tracking
+### Performance Tracking
 
 You can optionally attach a [pixl-perf](https://github.com/jhuckaby/pixl-perf) compatible performance tracker to the API class, which will measure all S3 calls for you.  Example:
 
@@ -591,704 +599,311 @@ It will track the following performance metrics for you:
 
 | Perf Metric | Description |
 |-------------|-------------|
-| `s3_put` | Measures all S3 upload operations, including [put()](#put), [uploadFile()](#uploadfile), [uploadFiles()](#uploadfiles), [putBuffer()](#putbuffer) and [putStream()](#putstream)). |
-| `s3_get` | Measures all S3 download operations, including [get()](#get), [downloadFile()](#downloadfile), [downloadFiles()](#downloadfiles), [getBuffer()](#getbuffer) and [getStream()](#getstream)). |
-| `s3_head` | Measures all calls to [head()](#head). |
-| `s3_list` | Measures all calls to [list()](#list). |
-| `s3_copy` | Measures all calls to [copy()](#copy). |
-| `s3_delete` | Measures all calls to [delete()](#delete) and [deleteFiles()](#deletefiles). |
+| `s3_put` | Measures all S3 upload operations, including [put()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#put), [uploadFile()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#uploadfile), [uploadFiles()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#uploadfiles), [putBuffer()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#putbuffer) and [putStream()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#putstream)). |
+| `s3_get` | Measures all S3 download operations, including [get()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#get), [downloadFile()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#downloadfile), [downloadFiles()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#downloadfiles), [getBuffer()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#getbuffer) and [getStream()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#getstream)). |
+| `s3_head` | Measures all calls to [head()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#head). |
+| `s3_list` | Measures all calls to [list()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#list). |
+| `s3_copy` | Measures all calls to [copy()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#copy). |
+| `s3_delete` | Measures all calls to [delete()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#delete) and [deleteFiles()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#deletefiles). |
 
-## API Reference
+### Unit Tests
 
-### constructor
+To run the unit tests, you must set some environment variables instructing the code which S3 bucket and region to use.  Example:
 
-The class constructor accepts an object containing configuration properties.  The following properties are available:
-
-| Property Name | Type | Description |
-|---------------|------|-------------|
-| `credentials` | Object | Your AWS credentials (containing `accessKeyId` and `secretAccessKey`) if required. |
-| `region` | String | The AWS region to use for the S3 API.  Defaults to `us-west-1`. |
-| `bucket` | String | The S3 bucket to use by default.  You can optionally override this per API call. |
-| `prefix` | String | An optional prefix to prepend onto all S3 keys.  Useful for keeping all of your app's keys under a common prefix. |
-| `params` | Object | An optional object to set S3 object metadata.  See [Custom S3 Params](#custom-s3-params). |
-| `gzip` | Object | Optionally configure the gzip compression settings.  See [Compression](#compression). |
-| `timeout` | Integer | The number of milliseconds to wait before killing idle sockets.  The default is `5000` (5 seconds). |
-| `connectTimeout` | Integer | The number of milliseconds to wait when initially connecting to S3.  The default is `5000` (5 seconds). |
-| `retries` | Integer | The number of retries to attempt before failing each request.  The default is `50`.  Exponential backoff is included. |
-| `logger` | Object | Optionally pass in a [pixl-logger](https://github.com/jhuckaby/pixl-logger) compatible logger here.  Or use [attachLogAgent()](#attachlogagent). |
-| `perf` | Object | Optionally pass in a [pixl-perf](https://github.com/jhuckaby/pixl-perf) compatible perf tracker here.  Or use [attachPerfAgent()](#attachperfagent). |
-| `cache` | Object | Optionally enable caching for JSON records.  See [Caching](#caching) for details. |
-
-Example use:
-
-```js
-let s3 = new S3({
-	bucket: 'my-bucket-uswest1',
-	prefix: 'myapp/data/'
-});
+```sh
+S3API_TEST_REGION=us-west-1 S3API_TEST_BUCKET=my-bucket npm test
 ```
 
-### attachLogAgent
+All test records will be created under a `test/s3apiunit/PID/` key prefix, and everything will be deleted when the tests complete.  If any tests fail, however, there may be a few records leftover (deliberately, for debugging purposes), so you may need to delete those manually.
 
-The `attachLogAgent()` method allows you to attach a [pixl-logger](https://github.com/jhuckaby/pixl-logger) compatible logger to your API class.  It will log all requests and responses.  Example use:
+If you do not have automatic AWS authentication setup on your machine (e.g. `~/.aws/credentials` file or other), you may need to set the following two environment variables as well:
 
-```js
-s3.attachLogAgent( logger );
+```
+S3API_TEST_ACCESSKEYID
+S3API_TEST_SECRETACCESSKEY
 ```
 
-See [Logging](#logging) for details on what is logged.
+## CLI Usage
 
-### attachPerfAgent
+**s3-api** comes with a CLI tool which you can use to send S3 API calls from your terminal.  When you install the module globally (see below), it installs a single command called `s3` which is the CLI entry point.  The general syntax of the CLI is:
 
-The `attachPerfAgent()` method allows you to attach a [pixl-perf](https://github.com/jhuckaby/pixl-perf) compatible performance tracker to your API class.  It will measure all calls to S3.  Example use:
-
-```js
-s3.attachPerfAgent( perf );
+```
+s3 COMMAND [ARG1 ARG2...] [--KEY VALUE --KEY VALUE...]
 ```
 
-See [Performance Tracking](#performance-tracking) for details on what is tracked.
+Example command:
 
-### put
-
-The `put()` method stores an object as a JSON-serialized record in S3, treating it like a key/value store.  Example:
-
-```js
-try {
-	// store a record
-	let { meta } = await s3.put({ key: 'users/kermit', value: { animal: 'frog', color: 'green' } });
-}
-catch(err) {
-	// handle error here
-}
+```sh
+s3 upload /path/to/image.gif s3://my-bucket/s3dir/myfile.gif
 ```
 
-The method accepts an object containing the following properties:
+Each command typically takes one or more plain arguments, and most also support a number of "switches" (key/value arguments specified using a double-dash, e.g. `--key value`).
 
-| Property Name | Type | Description |
-|---------------|------|-------------|
-| `key` | String | **(Required)** The S3 key to store the object under.  This may be prepended with a `prefix` if set on the class instance. |
-| `value` | Object | **(Required)** The object value to store.  This will be serialized to JSON behind the scenes. |
-| `pretty` | Boolean | Optionally serialize the JSON using "pretty-printing" (formatting with multiple lines and tab indentations) by setting this to `true`.  The default is `false`. |
-| `bucket` | String | Optionally override the S3 bucket used to store the record.  This is usually set in the class constructor. |
-| `params` | Object | Optionally specify parameters to the S3 API, for e.g. ACL and Storage Class.  See [Custom S3 Params](#custom-s3-params). |
+Please note that the standard [AWS S3 CLI](https://docs.aws.amazon.com/cli/latest/reference/s3/) is a much more feature-rich (not to mentioned battle-hardened) tool, and you should consider using that instead.  This module is a simplified wrapper that only supports basic S3 commands.
 
-The response object will contain the following keys, which you can destruct into variables as shown above:
+### Installation
 
-| Property Name | Type | Description |
-|---------------|------|-------------|
-| `meta` | Object | A raw metadata object that is sent back from the AWS S3 service.  It contains information about the request, used for debugging and troubleshooting purposes. |
+Use [npm](https://www.npmjs.com/) to install the module globally like this:
 
-### get
-
-The `get()` method fetches an object that was written in JSON format (e.g. from [put()](#put), or it can just be a JSON file that was uploaded to S3), and parses the JSON for you.  Example:
-
-```js
-try {
-	// fetch a record
-	let { data } = await s3.get({ key: 'users/kermit' });
-	console.log(data); // { "animal": "frog", "color": "green" }
-}
-catch(err) {
-	// handle error here
-}
+```sh
+npm install -g s3-api
 ```
 
-The method accepts an object containing the following properties:
+This will install a global `s3` command in your PATH (typically in `/usr/bin`).
 
-| Property Name | Type | Description |
-|---------------|------|-------------|
-| `key` | String | **(Required)** The S3 key of the object you want to get.  This may be prepended with a `prefix` if set on the class instance. |
-| `bucket` | String | Optionally specify the S3 bucket where the record is stored.  This is usually set in the class constructor. |
+### File Management
 
-The response object will contain the following keys, which you can destruct into variables as shown above:
+The CLI allows you to easily upload and download files to/from S3 using the [upload](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#upload) and [download](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#download) commands.  Here are examples:
 
-| Property Name | Type | Description |
-|---------------|------|-------------|
-| `data` | Object | The content of the JSON record, parsed and in object format. |
-| `meta` | Object | A raw metadata object that is sent back from the AWS S3 service.  It contains information about the request, used for debugging and troubleshooting purposes. |
+```sh
+# Upload single file
+s3 upload /path/to/image.gif s3://my-bucket/s3dir/myfile.gif
 
-**Note:** When [Caching](#caching) is enabled and an object is fetched from the cache, the `meta` response object will simply contain a single `cached` property, set to `true`.
-
-### head
-
-The `head()` method pings an object to check for its existence, and returns basic information about it.  Example:
-
-```js
-try {
-	// ping a remote object
-	let { meta } = await s3.head({ key: 's3dir/myfile.gif' });
-	console.log(meta);
-}
-catch (err) {
-	// handle error here
-}
+# Download single file
+s3 download s3://my-bucket/s3dir/myfile.gif /path/to/image.gif
 ```
 
-The method accepts an object containing the following properties:
+You can also upload and download multiple files and entire directories using [uploadFiles](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#uploadfiles) and [downloadFiles](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#downloadfiles):
 
-| Property Name | Type | Description |
-|---------------|------|-------------|
-| `key` | String | **(Required)** The S3 key of the object you want to ping.  This may be prepended with a `prefix` if set on the class instance. |
-| `nonfatal` | Boolean | Set this to `true` to suppress errors for non-existent keys (`meta` will simply be `null` in these cases).  The default is `false`. |
-| `bucket` | String | Optionally specify the S3 bucket where the record is stored.  This is usually set in the class constructor. |
+```sh
+# Upload entire folder
+s3 uploadFiles /path/to/images s3://my-bucket/s3dir/uploaded
 
-The response object will contain the following keys, which you can destruct into variables as shown above:
-
-| Property Name | Type | Description |
-|---------------|------|-------------|
-| `meta` | Object | A raw metadata object that is sent back from the AWS S3 service.  It contains information about the request, used for debugging and troubleshooting purposes. |
-
-In this case the `meta` object is augmented with the record's size (`size`) and modification date (`mtime`):
-
-| Property Name | Type | Description |
-|---------------|------|-------------|
-| `meta.size` | Integer | The object's size in bytes. |
-| `meta.mtime` | Integer | The object's modification date in Epoch seconds. |
-
-**Note:** The `head()` method bypasses the [Cache](#caching).  It always hits S3.
-
-### list
-
-The `list()` method fetches a listing of remote S3 objects that exist under a specified key prefix, and optionally match a specified filter.  It will automatically loop and paginate as required, returning the full set of matched objects regardless of length.  Example:
-
-```js
-try {
-	// list remote gif files
-	let { files, bytes } = await s3.list({ remotePath: 's3dir', filespec: /\.gif$/ });
-	console.log(files);
-}
-catch (err) {
-	// handle error here
-}
+# Download entire folder
+s3 downloadFiles s3://my-bucket/s3dir/uploaded /path/to/images
 ```
 
-The method accepts an object containing the following properties:
+These commands provide several ways of filtering files and paths to exclude files, or only include certain files.  Example:
 
-| Property Name | Type | Description |
-|---------------|------|-------------|
-| `remotePath` | String | The base S3 path to look for files under.  This may be prepended with a `prefix` if set on the class instance. |
-| `filespec` | RegExp | Optionally filter the result files using a regular expression, matched on the filenames. |
-| `filter` | Function | Optionally provide a filter function to select which files to return. |
-| `older` | Number | Optionally filter the S3 files based on their modification date, i.e. they must be older than the specified number of seconds.  You can also specify a string here, e.g. "7 days". |
-| `bucket` | String | Optionally specify the S3 bucket where the records are stored.  This is usually set in the class constructor. |
+```sh
+# Only upload GIF images
+s3 uploadFiles /path/to/images s3://my-bucket/s3dir/uploaded --filespec '\.gif$'
 
-The response object will contain the following keys, which you can destruct into variables as shown above:
+# Only download files over than 1 week
+s3 downloadFiles s3://my-bucket/s3dir/uploaded /path/to/images --older "1 week"
 
-| Property Name | Type | Description |
-|---------------|------|-------------|
-| `files` | Array | An array of file objects that matched your criteria.  See below for details. |
-| `bytes` | Integer | The total number of bytes used by all matched objects. |
-
-The items of the `files` array will contain the following properties:
-
-| Property Name | Type | Description |
-|---------------|------|-------------|
-| `key` | String | The object's full S3 key (including prefix if applicable). |
-| `size` | Integer | The objects's size in bytes. |
-| `mtime` | Integer | The object's modification date, as Epoch seconds. |
-
-### listFolders
-
-The `listFolders()` method fetches a listing of remote S3 files and "subfolders" that exist under a specified key prefix.  The S3 storage system doesn't *really* have a folder tree, but it fakes one by indexing keys by a delimiter (typically slash).  This method fetches one subfolder level only -- it does not recurse for nested folders.  Example:
-
-```js
-try {
-	// list remote folders and files
-	let { folders, files } = await s3.listFolders({ remotePath: 's3dir' });
-	console.log(folders, files);
-}
-catch (err) {
-	// handle error here
-}
+# Only upload files larger than 2MB
+s3 uploadFiles /path/to/images s3://my-bucket/s3dir/uploaded --larger "2 MB"
 ```
 
-The `folders` will be an array of subfolder paths, and the `files` are all files from the current folder level (see below).  Note that this API does **not** recurse for nested folders, nor does it paginate beyond 1,000 items.  It is really designed for use in an explorer UI only.
+These commands all support optional upload compression, and/or download decompression, so you can store `.gz` compressed files in S3, and decompress them on download.  Examples:
 
-The method accepts an object containing the following properties:
+```sh
+# Upload a bunch of files and compress with gzip (and add ".gz" suffix to all S3 files)
+s3 uploadFiles /path/to/files s3://my-bucket/s3dir/uploaded --compress --suffix ".gz"
 
-| Property Name | Type | Description |
-|---------------|------|-------------|
-| `remotePath` | String | The base S3 path to look for folders under.  This may be prepended with a `prefix` if set on the class instance. |
-| `delimiter` | String | Optionally override the delimiter for directory indexing.  Defaults to `/`. |
-| `bucket` | String | Optionally specify the S3 bucket where the folders reside.  This is usually set in the class constructor. |
-
-The response object will contain the following keys, which you can destruct into variables as shown above:
-
-| Property Name | Type | Description |
-|---------------|------|-------------|
-| `folders` | Array | An array of S3 path prefixes for subfolders just under the current level. |
-| `files` | Array | An array of file objects at the current folder level.  See below for details. |
-
-The items of the `files` array will contain the following properties:
-
-| Property Name | Type | Description |
-|---------------|------|-------------|
-| `key` | String | The object's full S3 key (including prefix if applicable). |
-| `size` | Integer | The objects's size in bytes. |
-| `mtime` | Integer | The object's modification date, as Epoch seconds. |
-
-### listBuckets
-
-The `listBuckets()` method fetches the complete list of S3 buckets in your AWS account.  It accepts no options.  Example:
-
-```js
-try {
-	// list buckets
-	let { buckets } = await s3.listBuckets();
-	console.log(buckets);
-}
-catch (err) {
-	// handle error here
-}
+# Download a bunch of gzip files and decompress (and strip off ".gz" suffix)
+s3 downloadFiles s3://my-bucket/s3dir/uploaded /path/to/files --decompress --strip '\.gz$'
 ```
 
-The response object will contain the following keys, which you can destruct into variables as shown above:
+You can also copy & move files around (even across buckets) using [copy](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#copy) and [move](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#move):
 
-| Property Name | Type | Description |
-|---------------|------|-------------|
-| `buckets` | Array | An array of S3 bucket names. |
+```sh
+# Copy file
+s3 copy s3://my-bucket/users/oldkermit.json s3://my-bucket/users/newkermit.json
 
-### walk
+# Move file
+s3 move s3://my-bucket/users/oldkermit.json s3://my-bucket/users/newkermit.json
+```
 
-The `walk()` method fires an interator for every remote S3 object that exists under a specified key prefix, and optionally match a specified filter.  It will automatically loop and paginate as required.  The iterator is fired as a synchronous call.  Example:
+You can delete single S3 files and entire folder trees using the [delete](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#delete) and [deleteFiles](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#deletefiles) commands:
 
-```js
-try {
-	// find remote gif files
-	var files = [];
-	await s3.walk({ remotePath: 's3dir', iterator: function(file) { files.push(file); } });
-	console.log(files);
-}
-catch (err) {
-	// handle error here
+```sh
+# Delete file
+s3 delete s3://my-bucket/users/newkermit.json
+
+# Delete entire folder
+s3 deleteFiles s3://my-bucket/s3dir/uploaded
+```
+
+The `deleteFiles` command also accepts all the filtering options that `uploadFiles` and `downloadFiles` use.  Example:
+
+```sh
+# Delete selected files
+s3 deleteFiles s3://my-bucket/s3dir/uploaded --filespec '\.gif$' --older "15 days"
+```
+
+To check if a file exists and view its metadata, use the [head](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#head) command:
+
+```sh
+s3 head s3://my-bucket/s3dir/myfile.gif
+```
+
+### Raw Streams
+
+You can upload and download raw streams from STDIN, or to STDOUT, using the [putStream](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#putstream) and [getStream](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#getstream) commands.  Examples:
+
+```sh
+# Upload stream from file
+cat /path/to/myfile.gif | s3 putStream s3://my-bucket/s3dir/myfile.gif
+
+# Download stream to file
+s3 getStream s3://my-bucket/s3dir/myfile.gif --quiet > /path/to/myfile.gif
+```
+
+### Listing
+
+To list remote files in S3, including files in nested folders, use the [list](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#list) command:
+
+```sh
+s3 list s3://my-bucket/s3dir/
+```
+
+To list only a single level of files and folders, use the [listFolders](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#listfolders) command:
+
+```sh
+s3 listFolders s3://my-bucket/s3dir/
+```
+
+To list all your S3 buckets, use the [listBuckets](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#listbuckets) command:
+
+```sh
+s3 listBuckets
+```
+
+### Key Value JSON
+
+If you want to use S3 as a key/value store, then this is the CLI for you.  The [put](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#put) and [get](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#get) commands store and fetch objects, serialized to/from JSON behind the scenes.  Examples:
+
+```sh
+# Put JSON record using raw JSON
+s3 put s3://my-bucket/users/kermit.json '{"animal":"frog", "color":"green"}'
+
+# Build JSON record using dot.path.notation
+s3 put s3://my-bucket/users/kermit.json --value.animal "frog" --value.color "green"
+
+# Get JSON record
+s3 get s3://my-bucket/users/kermit.json --pretty
+```
+
+You can also use the [update](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#update) command to make edits to JSON records using dot.path.notation.  Example:
+
+```sh
+s3 update s3://my-bucket/users/kermit.json --update.animal "toad" --update.color "yellow"
+```
+
+Using dot.path.notation you can add, replace and delete keys, access nested keys inside of objects, and even create new objects.  See the [reference guide](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#update) for details.
+
+### Backups
+
+The [backup](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#backup) command makes a point-in-time backup of a local directory, compresses it using `.zip`, `.tar` or `.tar.gz`, and uploads the archive to S3.  Example:
+
+```sh
+s3 backup /path/to/files s3://my-bucket/backups/mybackup-[yyyy]-[mm]-[dd].zip
+```
+
+You can use date/time placeholders in the destination S3 key, to embed a custom timestamp.
+
+If you make backups on a schedule, and only want to keep a certain amount in S3, add an `--expire` argument with a relative time (e.g. `30 days`) and the `backup` command will automatically delete archives that fall outside the specified date range.
+
+You can also restore backups using the [restoreBackup](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#restoreBackup) command.  This reverses the process, downloads a backup archive from S3, and decompresses it back onto the filesystem.  Example:
+
+```sh
+s3 restoreBackup s3://my-bucket/backups/mybackup-2024-05-22.zip /path/to/files
+```
+
+You can also optionally "pre-delete" the local directory to ensure an exact restoration.  To do this, add a `--delete` argument to the command.  Example:
+
+```sh
+s3 restoreBackup s3://my-bucket/backups/mybackup-2024-05-22.zip /path/to/files --delete
+```
+
+### Snapshots
+
+A "snapshot" works in the opposite direction of a backup.  A snapshot is a effectively a point-in-time backup of an S3 location, including all nested files and directories.  The [snapshot](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#snapshot) command downloads all S3 files and writes a local `.zip`, `.tar` or `.tar.gz` archive file.  Example:
+
+```sh
+s3 snapshot s3://my-bucket/s3dir/images /path/to/snapshot-[yyyy]-[mm]-[dd].zip
+```
+
+This would download and compress the entire `s3://my-bucket/s3dir/images` location and everything under it, and write it to `/path/to/snapshot-[yyyy]-[mm]-[dd].zip` on local disk.  You can use date/time placeholders in the destination filename, to embed a custom timestamp.
+
+If you take snapshots on a schedule, and only want to keep a certain amount on disk, add an `--expire` argument with a relative time (e.g. `30 days`) and the `snapshot` command will automatically delete snapshots that fall outside the specified date range.
+
+To restore a snapshot back to S3, use the [restoreSnapshot](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#restoresnapshot) command.  This decompresses a snapshot archive and re-uploads all files back to their original location (or a custom location).  Example:
+
+```sh
+s3 restoreSnapshot /path/to/snapshot-2024-05-22.zip s3://my-bucket/s3dir/images
+```
+
+You can also optionally "pre-delete" the target S3 location to ensure an exact restoration.  To do this, add a `--delete` argument to the command.  Example:
+
+```sh
+s3 restoreSnapshot /path/to/snapshot-2024-05-22.zip s3://my-bucket/s3dir/images --delete
+```
+
+### Config File
+
+The CLI supports an optional configuration file, which should live in your home directory and named `.s3-config.json` (with a leading period).  Example file path for root:
+
+```
+/root/.s3-config.json
+```
+
+The file should be in JSON format, and can store one or more [Common Arguments](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#common-arguments) that act as defaults for the CLI.  This is a great way to specify your AWS region, logging options, and other things as well, so you don't have to pass them on the command-line every time.  Example config file:
+
+```json
+{
+	"region": "us-west-1",
+	"log": "/var/log/s3-cli.log"
 }
 ```
 
-The method accepts an object containing the following properties:
-
-| Property Name | Type | Description |
-|---------------|------|-------------|
-| `remotePath` | String | The base S3 path to look for files under.  This may be prepended with a `prefix` if set on the class instance. |
-| `filespec` | RegExp | Optionally filter the result files using a regular expression, matched on the filenames. |
-| `filter` | Function | Optionally provide a filter function to select which files to return. |
-| `iterator` | Function | A synchronous function that is called for every remote S3 file.  It is passed an object containing file metadata (see below). |
-| `older` | Number | Optionally filter the S3 files based on their modification date, i.e. they must be older than the specified number of seconds.  You can also specify a string here, e.g. "7 days". |
-| `bucket` | String | Optionally specify the S3 bucket where the records are stored.  This is usually set in the class constructor. |
-
-Each item object passed to the iterator will contain the following properties:
-
-| Property Name | Type | Description |
-|---------------|------|-------------|
-| `key` | String | The object's full S3 key (including prefix if applicable). |
-| `size` | Integer | The objects's size in bytes. |
-| `mtime` | Integer | The object's modification date, as Epoch seconds. |
-
-### copy
-
-The `copy()` method copies one S3 object to another location.  This API can copy between buckets as well.  Example:
-
-```js
-try {
-	// copy an object
-	let { meta } = await s3.copy({ sourceKey: 'users/oldkermit', key: 'users/newkermit' });
-}
-catch(err) {
-	// handle error here
-}
-```
-
-To copy an object between buckets, include a `sourceBucket` property.  The destination bucket is always specified via `bucket` (which may be set on your class instance or in the copy API).  Example:
-
-```js
-try {
-	// copy an object between buckets
-	let { meta } = await s3.copy({ sourceBucket: 'oldbucket', sourceKey: 'users/oldkermit', bucket: 'newbucket', key: 'users/newkermit' });
-}
-catch(err) {
-	// handle error here
-}
-```
-
-The method accepts an object containing the following properties:
-
-| Property Name | Type | Description |
-|---------------|------|-------------|
-| `sourceKey` | String | **(Required)** The S3 key to copy from.  This may be prepended with a `prefix` if set on the class instance. |
-| `key` | String | **(Required)** The S3 key to copy the object to.  This may be prepended with a `prefix` if set on the class instance. |
-| `sourceBucket` | String | Optionally override the S3 bucket used to read the source record.  This defaults to the class `bucket` parameter. |
-| `bucket` | String | Optionally override the S3 bucket used to store the destination record.  This is usually set in the class constructor. |
-| `params` | Object | Optionally specify parameters to the S3 API, for e.g. ACL and Storage Class.  See [Custom S3 Params](#custom-s3-params). |
-
-The response object will contain the following keys, which you can destruct into variables as shown above:
-
-| Property Name | Type | Description |
-|---------------|------|-------------|
-| `meta` | Object | A raw metadata object that is sent back from the AWS S3 service.  It contains information about the request, used for debugging and troubleshooting purposes. |
-
-### move
-
-The `move()` method moves one S3 object to another location.  Essentially, it performs a [copy()](#copy) followed by a [delete()](#delete).  This can move objects between buckets as well.  Example:
-
-```js
-try {
-	// move an object
-	let { meta } = await s3.move({ sourceKey: 'users/oldkermit', key: 'users/newkermit' });
-}
-catch(err) {
-	// handle error here
-}
-```
-
-To move an object between buckets, use `sourceBucket`.  The destination bucket is always specified via `bucket` (which may be set on your class instance or in the copy API).  Example:
-
-```js
-try {
-	// move an object between buckets
-	let { meta } = await s3.move({ sourceBucket: 'oldbucket', sourceKey: 'users/oldkermit', bucket: 'newbucket', key: 'users/newkermit' });
-}
-catch(err) {
-	// handle error here
-}
-```
-
-The method accepts an object containing the following properties:
-
-| Property Name | Type | Description |
-|---------------|------|-------------|
-| `sourceKey` | String | **(Required)** The S3 key to move from.  This may be prepended with a `prefix` if set on the class instance. |
-| `key` | String | **(Required)** The S3 key to move the object to.  This may be prepended with a `prefix` if set on the class instance. |
-| `sourceBucket` | String | Optionally override the S3 bucket used to read the source record.  This defaults to the class `bucket` parameter. |
-| `bucket` | String | Optionally override the S3 bucket used to store the destination record.  This is usually set in the class constructor. |
-| `params` | Object | Optionally specify parameters to the S3 API, for e.g. ACL and Storage Class.  See [Custom S3 Params](#custom-s3-params). |
-
-The response object will contain the following keys, which you can destruct into variables as shown above:
-
-| Property Name | Type | Description |
-|---------------|------|-------------|
-| `meta` | Object | A raw metadata object that is sent back from the AWS S3 service.  It contains information about the request, used for debugging and troubleshooting purposes. |
-
-### delete
-
-The `delete()` method deletes a single object from S3 given its key.  Please use caution here, as there is no way to undo a delete -- we don't use versioned buckets.  Example:
-
-```js
-try {
-	// delete a remote object
-	let { meta } = await s3.delete({ key: 's3dir/myfile.gif' });
-}
-catch (err) {
-	// handle error here
-}
-```
-
-The method accepts an object containing the following properties:
-
-| Property Name | Type | Description |
-|---------------|------|-------------|
-| `key` | String | **(Required)** The S3 key of the object you want to delete.  This may be prepended with a `prefix` if set on the class instance. |
-| `bucket` | String | Optionally specify the S3 bucket where the record is stored.  This is usually set in the class constructor. |
-
-The response object will contain the following keys, which you can destruct into variables as shown above:
-
-| Property Name | Type | Description |
-|---------------|------|-------------|
-| `meta` | Object | A raw metadata object that is sent back from the AWS S3 service.  It contains information about the request, used for debugging and troubleshooting purposes. |
-
-**Note:** This will also remove the object from the [Cache](#caching), if enabled.
-
-### uploadFile
-
-The `uploadFile()` method uploads a file from the local filesystem to an object in S3.  This uses streams and multi-part uploads in the background, so it can handle files of any size while using very little memory.  Example:
-
-```js
-try {
-	// upload file
-	let { meta } = await s3.uploadFile({ localFile: '/path/to/image.gif', key: 's3dir/myfile.gif' });
-}
-catch(err) {
-	// handle error here
-}
-```
-
-The method accepts an object containing the following properties:
-
-| Property Name | Type | Description |
-|---------------|------|-------------|
-| `localFile` | String | **(Required)** A path to the file on local disk. |
-| `key` | String | **(Required)** The S3 key of the object.  This may be prepended with a `prefix` if set on the class instance. |
-| `compress` | Boolean | Set this to `true` to automatically compress the file during upload.  Defaults to `false`.  See [Compression](#compression). |
-| `bucket` | String | Optionally specify the S3 bucket where the record is stored.  This is usually set in the class constructor. |
-| `params` | Object | Optionally specify parameters to the S3 API, for e.g. ACL and Storage Class.  See [Custom S3 Params](#custom-s3-params). |
-
-The response object will contain the following keys, which you can destruct into variables as shown above:
-
-| Property Name | Type | Description |
-|---------------|------|-------------|
-| `meta` | Object | A raw metadata object that is sent back from the AWS S3 service.  It contains information about the request, used for debugging and troubleshooting purposes. |
-
-Note that you can omit the filename portion of the `key` property if you want.  Specifically, if the `key` ends with a slash (`/`) this will trigger the library to automatically append the local filename to the end of the S3 key.
-
-### downloadFile
-
-The `downloadFile()` method downloads an object from S3, and saves it to a local file on disk.  The local file's parent directories will be automatically created if needed.  This uses streams in the background, so it can handle files of any size while using very little memory.  Example:
-
-```js
-try {
-	// download file
-	let { meta } = await s3.downloadFile({ key: 's3dir/myfile.gif', localFile: '/path/to/image.gif' });
-}
-catch(err) {
-	// handle error here
-}
-```
-
-The method accepts an object containing the following properties:
-
-| Property Name | Type | Description |
-|---------------|------|-------------|
-| `key` | String | **(Required)** The S3 key of the object to download.  This may be prepended with a `prefix` if set on the class instance. |
-| `localFile` | String | **(Required)** A path to the destination file on local disk. |
-| `decompress` | Boolean | Set this to `true` to automatically decompress the file during download.  Defaults to `false`.  See [Compression](#compression). |
-| `bucket` | String | Optionally specify the S3 bucket where the record is stored.  This is usually set in the class constructor. |
-
-The response object will contain the following keys, which you can destruct into variables as shown above:
-
-| Property Name | Type | Description |
-|---------------|------|-------------|
-| `meta` | Object | A raw metadata object that is sent back from the AWS S3 service.  It contains information about the request, used for debugging and troubleshooting purposes. |
-
-Note that you can omit the filename portion of the `localFile` property if you want.  Specifically, if the `localFile` ends with a slash (`/`) this will trigger the library to automatically append the filename from the S3 key.
-
-### uploadFiles
-
-The `uploadFiles()` method recursively uploads multiple files / directories from the local filesystem to S3.  This uses streams and multi-part uploads in the background, so it can handle files of any size while using very little memory.  Example:
-
-```js
-try {
-	// upload selected files
-	let { files } = await s3.uploadFiles({ localPath: '/path/to/images', remotePath: 's3dir/uploadedimages', filespec: /\.gif$/ });
-}
-catch(err) {
-	// handle error here
-}
-```
-
-The method accepts an object containing the following properties:
-
-| Property Name | Type | Description |
-|---------------|------|-------------|
-| `localPath` | String | **(Required)** The base filesystem path to find files under.  Should resolve to a folder. |
-| `remotePath` | String | **(Required)** The base S3 path to store files under.  This may be prepended with a `prefix` if set on the class instance. |
-| `filespec` | RegExp | Optionally filter the local files using a regular expression, applied to the filenames. |
-| `threads` | Integer | Optionally increase the threads to improve performance (don't combine with `compress`). |
-| `compress` | Boolean | Set this to `true` to automatically compress all files during upload.  Defaults to `false`.  See [Compression](#compression). |
-| `suffix` | String | Optionally append a suffix to every destination S3 key, e.g. `.gz` for compressed files. |
-| `bucket` | String | Optionally specify the S3 bucket where the record is stored.  This is usually set in the class constructor. |
-| `params` | Object | Optionally specify parameters to the S3 API, for e.g. ACL and Storage Class.  See [Custom S3 Params](#custom-s3-params). |
-
-The response object will contain the following keys, which you can destruct into variables as shown above:
-
-| Property Name | Type | Description |
-|---------------|------|-------------|
-| `files` | Array | An array of files that were uploaded.  Each item in the array is a string containing the file path. |
-
-### downloadFiles
-
-The `downloadFiles()` method recursively downloads multiple files / directories from S3 to the local filesystem.  Local parent directories will be automatically created if needed.  This uses streams in the background, so it can handle files of any size while using very little memory.  Example:
-
-```js
-try {
-	// download selected files
-	let { files, bytes } = await s3.downloadFiles({ remotePath: 's3dir/uploadedimages', localPath: '/path/to/images', filespec: /\.gif$/ });
-}
-catch(err) {
-	// handle error here
-}
-```
-
-The method accepts an object containing the following properties:
-
-| Property Name | Type | Description |
-|---------------|------|-------------|
-| `remotePath` | String | **(Required)** The base S3 path to fetch files from.  This may be prepended with a `prefix` if set on the class instance. |
-| `localPath` | String | **(Required)** The local filesystem path to save files under.  Parent directories will automatically be created if needed. |
-| `filespec` | RegExp | Optionally filter the S3 files using a regular expression, matched on the filenames. |
-| `threads` | Integer | Optionally increase the threads to improve performance (don't combine with `decompress`). |
-| `decompress` | Boolean | Set this to `true` to automatically decompress all files during download.  Defaults to `false`.  See [Compression](#compression). |
-| `strip` | RegExp | Optionally strip a suffix from every destination filename, e.g. `/\.gz$/` to strip the `.gz.` suffix off compressed files. |
-| `bucket` | String | Optionally specify the S3 bucket where the record is stored.  This is usually set in the class constructor. |
-| `params` | Object | Optionally specify parameters to the S3 API, for e.g. ACL and Storage Class.  See [Custom S3 Params](#custom-s3-params). |
-
-The response object will contain the following keys, which you can destruct into variables as shown above:
-
-| Property Name | Type | Description |
-|---------------|------|-------------|
-| `files` | Array | An array of files that were downloaded.  Each item in the array is an object with `key`, `size` and `mtime` properties. |
-| `bytes` | Integer | The total number of bytes downloaded. |
-
-### deleteFiles
-
-The `deleteFiles()` method recursively deletes multiple files / directories from S3.  Please use extreme caution here, as there is no way to undo deletes -- we don't use versioned buckets.  Example:
-
-```js
-try {
-	// delete selected files
-	let { files, bytes } = await s3.deleteFiles({ remotePath: 's3dir/uploadedimages', filespec: /\.gif$/ });
-}
-catch(err) {
-	// handle error here
-}
-```
-
-The method accepts an object containing the following properties:
-
-| Property Name | Type | Description |
-|---------------|------|-------------|
-| `remotePath` | String | **(Required)** The base S3 path to delete files from.  This may be prepended with a `prefix` if set on the class instance. |
-| `filespec` | RegExp | Optionally filter the S3 files using a regular expression, matched on the filenames. |
-| `older` | Mixed | Optionally filter the S3 files based on their modification date, i.e. must be older than the specified number of seconds.  You can also specify a string here, e.g. "7 days". |
-| `threads` | Integer | Optionally increase the threads to improve performance at the cost of additional HTTP connections. |
-| `bucket` | String | Optionally specify the S3 bucket where the record is stored.  This is usually set in the class constructor. |
-
-The response object will contain the following keys, which you can destruct into variables as shown above:
-
-| Property Name | Type | Description |
-|---------------|------|-------------|
-| `files` | Array | An array of files that were deleted.  Each item in the array is an object with `key`, `size` and `mtime` properties. |
-| `bytes` | Integer | The total number of bytes deleted. |
-
-### putBuffer
-
-The `putBuffer()` method uploads a Node.js [Buffer](https://nodejs.org/api/buffer.html) to S3, given a key.  Example:
-
-```js
-let buf = fs.readFileSync( '/path/to/image.gif' );
-
-try {
-	// upload buffer
-	let { meta } = await s3.putBuffer({ key: 's3dir/myfile.gif', value: buf });
-}
-catch (err) {
-	// handle error here
-}
-```
-
-The method accepts an object containing the following properties:
-
-| Property Name | Type | Description |
-|---------------|------|-------------|
-| `key` | String | **(Required)** The S3 key to store the object under.  This may be prepended with a `prefix` if set on the class instance. |
-| `value` | Buffer | **(Required)** The buffer value to store. |
-| `compress` | Boolean | Set this to `true` to automatically compress the buffer during upload.  Defaults to `false`.  See [Compression](#compression). |
-| `bucket` | String | Optionally override the S3 bucket used to store the record.  This is usually set in the class constructor. |
-| `params` | Object | Optionally specify parameters to the S3 API, for e.g. ACL and Storage Class.  See [Custom S3 Params](#custom-s3-params). |
-
-The response object will contain the following keys, which you can destruct into variables as shown above:
-
-| Property Name | Type | Description |
-|---------------|------|-------------|
-| `meta` | Object | A raw metadata object that is sent back from the AWS S3 service.  It contains information about the request, used for debugging and troubleshooting purposes. |
-
-### getBuffer
-
-The `getBuffer()` method fetches an S3 object, and returns a Node.js [Buffer](https://nodejs.org/api/buffer.html).  Beware of memory utilization with large objects, as buffers are stored entirely in memory.  Example:
-
-```js
-try {
-	// download buffer
-	let { data } = await s3.getBuffer({ key: 's3dir/myfile.gif' });
-}
-catch (err) {
-	// handle error here
-}
-```
-
-The method accepts an object containing the following properties:
-
-| Property Name | Type | Description |
-|---------------|------|-------------|
-| `key` | String | **(Required)** The S3 key of the object you want to get.  This may be prepended with a `prefix` if set on the class instance. |
-| `decompress` | Boolean | Set this to `true` to automatically decompress the buffer during download.  Defaults to `false`.  See [Compression](#compression). |
-| `bucket` | String | Optionally specify the S3 bucket where the record is stored.  This is usually set in the class constructor. |
-
-The response object will contain the following keys, which you can destruct into variables as shown above:
-
-| Property Name | Type | Description |
-|---------------|------|-------------|
-| `data` | Buffer | The content of the S3 record, in buffer format. |
-| `meta` | Object | A raw metadata object that is sent back from the AWS S3 service.  It contains information about the request, used for debugging and troubleshooting purposes. |
-
-### putStream
-
-The `putStream()` method uploads a Node.js [Stream](https://nodejs.org/api/stream.html) to S3, given a key.  Example:
-
-```js
-let readStream = fs.createReadStream( '/path/to/image.gif' );
-
-try {
-	// upload stream to S3
-	await s3.putStream({ key: 's3dir/myfile.gif', value: readStream });
-}
-catch (err) {
-	// handle error here
-}
-```
-
-The method accepts an object containing the following properties:
-
-| Property Name | Type | Description |
-|---------------|------|-------------|
-| `key` | String | **(Required)** The S3 key to store the object under.  This may be prepended with a `prefix` if set on the class instance. |
-| `value` | Stream | **(Required)** The Node.js stream to upload. |
-| `compress` | Boolean | Set this to `true` to automatically compress the stream during upload.  Defaults to `false`.  See [Compression](#compression). |
-| `bucket` | String | Optionally override the S3 bucket used to store the record.  This is usually set in the class constructor. |
-| `params` | Object | Optionally specify parameters to the S3 API, for e.g. ACL and Storage Class.  See [Custom S3 Params](#custom-s3-params). |
-
-The response object will contain the following keys, which you can destruct into variables as shown above:
-
-| Property Name | Type | Description |
-|---------------|------|-------------|
-| `meta` | Object | A raw metadata object that is sent back from the AWS S3 service.  It contains information about the request, used for debugging and troubleshooting purposes. |
-
-### getStream
-
-The `getStream()` method fetches an S3 object, and returns a Node.js [readable stream](https://nodejs.org/api/stream.html#readable-streams) for handling in your code.  Specifically, the data is not downloaded in the scope of the API call -- a stream is merely started.  You are expected to handle the stream yourself, i.e. pipe it to another stream, or read chunks off it by hand.  Here is an example of piping it to a file:
-
-```js
-let writeStream = fs.createWriteStream( '/path/to/image.gif' );
-
-try {
-	// start stream from S3
-	let { data } = await s3.getStream({ key: 's3dir/myfile.gif' });
+You can also use dot.path.notation here to configure things such as AWS credentials, a default S3 storage class, and/or default ACL for all S3 objects.  Example:
+
+```json
+{
+	"region": "us-west-1",
+	"log": "/var/log/s3-cli.log",
 	
-	// pipe it to local file
-	data.pipe( writeStream );
+	"credentials.accessKeyId": "YOUR_ACCESS_KEY_HERE",
+	"credentials.secretAccessKey": "YOUR_SECRET_KEY_HERE",
 	
-	writeStream.on('finish', function() {
-		// download complete
-	});
-}
-catch (err) {
-	// handle error here
+	"params.StorageClass": "STANDARD_IA",
+	"params.ACL": "public-read"
 }
 ```
 
-The method accepts an object containing the following properties:
+Note that arguments in the config file should **not** have a double-dash prefix like they do on the command-line.
 
-| Property Name | Type | Description |
-|---------------|------|-------------|
-| `key` | String | **(Required)** The S3 key of the object you want to get.  This may be prepended with a `prefix` if set on the class instance. |
-| `decompress` | Boolean | Set this to `true` to automatically decompress the stream during download.  Defaults to `false`.  See [Compression](#compression). |
-| `bucket` | String | Optionally specify the S3 bucket where the record is stored.  This is usually set in the class constructor. |
+### CLI Logging
 
-The response object will contain the following keys, which you can destruct into variables as shown above:
+The CLI supports an optiona log file, which contains all output, as well as verbose debug information.  To enable the log, add `--log FILE` to any command, or place it in your [config file](#config-file).  Each line is annotated with a timestamp.  Example log snippet:
 
-| Property Name | Type | Description |
-|---------------|------|-------------|
-| `data` | Stream | The stream of the S3 contents, ready for piping. |
-| `meta` | Object | A raw metadata object that is sent back from the AWS S3 service.  It contains information about the request, used for debugging and troubleshooting purposes. |
+```
+[2024/05/26 14:03:16] 🪣 S3 API v2.0.0
+[2024/05/26 14:03:16] {"region":"us-west-1","bucket":"my-bucket","key":"users-test.json","updates":{"num":1}}
+[2024/05/26 14:03:16] Updating JSON record: users-test.json
+[2024/05/26 14:03:16] {"bucket":"my-bucket","key":"users-test.json","updates":{"num":1}}
+[2024/05/26 14:03:16] Fetching JSON record: users-test.json
+[2024/05/26 14:03:16] {"bucket":"my-bucket","key":"users-test.json"}
+[2024/05/26 14:03:16] Fetching stream: users-test.json
+[2024/05/26 14:03:16] {"Metadata":{"animal":"frog","num":1},"Bucket":"my-bucket","Key":"users-test.json"}
+[2024/05/26 14:03:16] Stream started: users-test.json
+[2024/05/26 14:03:16] Converting stream to buffer: users-test.json
+[2024/05/26 14:03:16] Fetch complete: users-test.json
+[2024/05/26 14:03:16] 21 bytes
+[2024/05/26 14:03:16] JSON fetch complete: users-test.json
+[2024/05/26 14:03:16] Storing JSON record: users-test.json
+[2024/05/26 14:03:16] {"bucket":"my-bucket","key":"users-test.json"}
+[2024/05/26 14:03:16] Storing Buffer: users-test.json (21 bytes)
+[2024/05/26 14:03:16] {"ContentType":"application/json"}
+[2024/05/26 14:03:16] Storing Stream: users-test.json
+[2024/05/26 14:03:16] {"Metadata":{"animal":"frog","num":"1"},"ContentType":"application/json","Bucket":"my-bucket","Key":"users-test.json"}
+[2024/05/26 14:03:16] Store complete: users-test.json
+```
 
-# License
+A few other notes about the CLI log:
+
+- Verbose debugging information is always logged, even if `--verbose` mode is disabled.
+- The log will contain all CLI output even if it is silenced with `--quiet` mode.
+- All color is stripped from the log.
+
+### CLI Reference
+
+See the [CLI Reference](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md) for more details.
+
+## License
 
 **The MIT License (MIT)**
 

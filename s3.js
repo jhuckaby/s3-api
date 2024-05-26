@@ -206,6 +206,46 @@ class S3API {
 		});
 	}
 	
+	/**
+	 * Update JSON record by using dot.path.notation to add/replace/delete properties.
+	 * @param {Object} opts - The options object for the update operation.
+	 * @param {string} opts.key - The key (S3 path) to update.
+	 * @param {Object} opts.updates - The value containing properties to update.
+	 * @param {string} [opts.bucket] - Optionally override the S3 bucket.
+	 * @returns {Promise<GetResponse>} - A promise that resolves to a custom object.
+	 */
+	update(opts, callback) {
+		// Update JSON record
+		// opts: { bucket, key, updates }
+		// result: { data, metadata }
+		let self = this;
+		if (!opts.updates) return callback( new Error("Missing required 'updates' (object) property.") );
+		if (typeof(opts.updates) != 'object') return callback( new Error("The 'updates' property must be an object.") );
+		if (Buffer.isBuffer(opts.updates)) return callback( new Error("The 'updates' property must be an object (not a Buffer).") );
+		
+		this.logDebug(8, "Updating JSON record: " + opts.key, opts);
+		
+		let updates = opts.updates;
+		delete opts.updates;
+		
+		// first load the record
+		this.get( opts, function(err, data) {
+			if (err) return callback(err);
+			
+			// apply updates
+			for (let key in updates) {
+				Tools.setPath( data, key, updates[key] );
+			}
+			
+			// save the record
+			opts.value = data;
+			self.put( opts, function(err, meta) {
+				if (err) return callback(err);
+				callback( null, data, meta );
+			} );
+		}); // get
+	}
+	
 	/** 
 	 * @typedef {Object} HeadResponse
 	 * @property {Object} meta - Raw metadata object from the AWS S3 service, augmented with extras.
@@ -376,6 +416,8 @@ class S3API {
 		params.MaxKeys = 1000;
 		params.Delimiter = opts.delimiter || '/';
 		
+		if (params.Prefix.length && !params.Prefix.endsWith(params.Delimiter)) params.Prefix += params.Delimiter;
+		
 		this.logDebug(8, "Listing S3 subfolders with prefix: " + params.Prefix, opts);
 		let tracker = this.perf ? this.perf.begin('s3_list') : null;
 		
@@ -420,7 +462,7 @@ class S3API {
 	 * @param {Object} opts - The options object for the list operation.
 	 * @param {string} opts.remotePath - The base S3 path to look for files under.
 	 * @param {RegExp} [opts.filespec] - Optionally filter the result files using a regular expression, matched on the filenames.
-	 * @param {Function} [opts.filter] - Optionally provide a filter function to select which files to return.
+	 * @param {Function} [opts.filter] - Optionally provide a filter function to select which files to include.
 	 * @param {(number|string)} [opts.older] - Optionally filter the S3 files based on their modification date.
 	 * @param {string} [opts.bucket] - Optionally specify the S3 bucket where the folders reside.
 	 * @returns {Promise<ListResponse>} - A promise that resolves to a custom object.
@@ -438,6 +480,7 @@ class S3API {
 		let now = Tools.timeNow(true);
 		
 		if (typeof(opts) == 'string') opts = { remotePath: opts };
+		if (opts.filter && opts.older) return callback( new Error("The 'filter' and 'older' properties are mutually exclusive.") );
 		if (!opts.bucket) opts.bucket = this.bucket;
 		if (!opts.bucket) return callback( new Error("Missing required 'bucket' (string) property.") );
 		if (!opts.remotePath) opts.remotePath = '';
@@ -757,6 +800,7 @@ class S3API {
 	 * @param {string} opts.localPath - The base filesystem path to find files under.  Should resolve to a folder.
 	 * @param {string} opts.remotePath - The base S3 path to store files under.
 	 * @param {RegExp} [opts.filespec] - Optionally filter the local files using a regular expression, matched on the filenames.
+	 * @param {Function} [opts.filter] - Optionally provide a filter function to select which files to include.
 	 * @param {number} [opts.threads=1] - Optionally increase the threads to improve performance.
 	 * @param {string} [opts.bucket] - Optionally override the S3 bucket.
 	 * @param {Object} [opts.params] - Optionally specify parameters to the S3 API, for e.g. ACL and Storage Class. 
@@ -802,6 +846,7 @@ class S3API {
 	 * @param {string} opts.remotePath - The base S3 path to fetch files from.
 	 * @param {string} opts.localPath - The local filesystem path to save files under.
 	 * @param {RegExp} [opts.filespec] - Optionally filter the S3 files using a regular expression, matched on the filenames.
+	 * @param {Function} [opts.filter] - Optionally provide a filter function to select which files to include.
 	 * @param {number} [opts.threads=1] - Optionally increase the threads to improve performance.
 	 * @param {string} [opts.bucket] - Optionally override the S3 bucket.
 	 * @param {boolean} [opts.decompress=false] - Optionally decompress the files during download.
@@ -840,6 +885,7 @@ class S3API {
 	 * @param {Object} opts - The options object for the list operation.
 	 * @param {string} opts.remotePath - The base S3 path to delete files from.
 	 * @param {RegExp} [opts.filespec] - Optionally filter the S3 files using a regular expression, matched on the filenames.
+	 * @param {Function} [opts.filter] - Optionally provide a filter function to select which files to include.
 	 * @param {(number|string)} [opts.older] - Optionally filter the S3 files based on their modification date.
 	 * @param {number} [opts.threads=1] - Optionally increase the threads to improve performance.
 	 * @param {string} [opts.bucket] - Optionally specify the S3 bucket where the folders reside.
@@ -953,6 +999,13 @@ class S3API {
 		let params = Tools.mergeHashes( this.params || {}, opts.params || {} );
 		params.Bucket = opts.bucket;
 		params.Key = this.prefix + opts.key;
+		
+		// if S3 Metadata is provided, all keys MUST be strings (limitation of S3 / AWS-SDK)
+		if (params.Metadata) {
+			for (let key in params.Metadata) {
+				params.Metadata[key] = '' + params.Metadata[key];
+			}
+		}
 		
 		this.logDebug(9, "Storing Stream: " + opts.key, params);
 		
@@ -1123,6 +1176,7 @@ class S3API {
 asyncify( S3API, {
 	put: ['meta'],
 	get: ['data', 'meta'],
+	update: ['data', 'meta'],
 	head: ['meta'],
 	listFolders: ['folders', 'files'],
 	list: ['files', 'bytes'],

@@ -70,13 +70,13 @@ exports.tests = [
 		test.ok( !!meta.$metadata, "meta.$metadata is defined" );
 		test.ok( meta.$metadata.httpStatusCode >= 200 && meta.$metadata.httpStatusCode <= 299, "meta.$metadata.httpStatusCode expected to be 2xx, got: " + meta.$metadata.httpStatusCode );
 		test.ok( !!data, "data is defined" );
-		test.ok(	!!data.hello, "data.hello is defined" );
+		test.ok( !!data.hello, "data.hello is defined" );
 		test.ok( data.hello === "there", "data.hello expected to be there, got: " + data.hello );
 		test.done();
 	},
 	
 	async function testReplaceJSON(test) {
-		let { meta } = await s3.put({ key: 'test1.json', value: { hello: 'there2' } });
+		let { meta } = await s3.put({ key: 'test1.json', value: { hello: 'there2', color: 'cyan', animal: 'frog' } });
 		
 		test.ok( !!meta, "meta is defined" );
 		test.ok( !!meta.$metadata, "meta.$metadata is defined" );
@@ -86,8 +86,10 @@ exports.tests = [
 		let { data } = await s3.get({ key: 'test1.json' });
 		
 		test.ok( !!data, "data is defined" );
-		test.ok(	!!data.hello, "data.hello is defined" );
+		test.ok( !!data.hello, "data.hello is defined" );
 		test.ok( data.hello === "there2", "data.hello expected to be there2, got: " + data.hello );
+		test.ok( data.color === "cyan", "data.color expected to be cyan, got: " + data.color );
+		test.ok( data.animal === "frog", "data.animal expected to be frog, got: " + data.animal );
 		test.done();
 	},
 	
@@ -102,8 +104,30 @@ exports.tests = [
 		let { data } = await s3.get({ key: 'test2.json' });
 		
 		test.ok( !!data, "data is defined" );
-		test.ok(	!!data.hello, "data.hello is defined" );
+		test.ok( !!data.hello, "data.hello is defined" );
 		test.ok( data.hello === "there2", "data.hello expected to be there2, got: " + data.hello );
+		test.done();
+	},
+	
+	async function testUpdateJSON(test) {
+		let { meta } = await s3.update({ key: 'test1.json', updates: { hello: 'there3', color: undefined, sound: 'oof', "obj1.hello": "there4" } });
+		
+		test.ok( !!meta, "meta is defined" );
+		test.ok( !!meta.$metadata, "meta.$metadata is defined" );
+		test.ok( meta.$metadata.httpStatusCode >= 200 && meta.$metadata.httpStatusCode <= 299, "meta.$metadata.httpStatusCode expected to be 2xx, got: " + meta.$metadata.httpStatusCode );
+		
+		// recheck contents
+		let { data } = await s3.get({ key: 'test1.json' });
+		
+		test.ok( !!data, "data is defined" );
+		test.ok( !!data.hello, "data.hello is defined" );
+		test.ok( data.hello === "there3", "data.hello expected to be there3, got: " + data.hello ); // replaced
+		test.ok( data.animal === "frog", "data.animal expected to be frog, got: " + data.animal ); // untouched
+		test.ok( !("color" in data), "data.color expected to be missing, but is still present: " + data.color ); // deleted
+		test.ok( data.sound === "oof", "data.sound expected to be oof, got: " + data.sound ); // added
+		test.ok( !!data.obj1, "data.obj1 expected, but is missing" ); // object
+		test.ok( typeof(data.obj1) === 'object', "data.obj1 type expected to be object, got: " + typeof(data.obj1) ); // obj type
+		test.ok( data.obj1.hello === 'there4', "data.obj1.hello expected to be there4, got: " + data.obj1.hello ); // sub-prop nested
 		test.done();
 	},
 	
@@ -118,7 +142,7 @@ exports.tests = [
 		let { data } = await s3.get({ key: 'test3.json' });
 		
 		test.ok( !!data, "data is defined" );
-		test.ok(	!!data.hello, "data.hello is defined" );
+		test.ok( !!data.hello, "data.hello is defined" );
 		test.ok( data.hello === "there2", "data.hello expected to be there2, got: " + data.hello );
 		
 		// make sure test2.json is deleted
@@ -158,7 +182,7 @@ exports.tests = [
 		test.ok( meta.$metadata.httpStatusCode >= 200 && meta.$metadata.httpStatusCode <= 299, "meta.$metadata.httpStatusCode expected to be 2xx, got: " + meta.$metadata.httpStatusCode );
 		test.ok( !!data, "data is defined" );
 		test.ok( Buffer.isBuffer(data), "data is a Buffer" );
-		test.ok(	!!data.length, "data.length is defined" );
+		test.ok( !!data.length, "data.length is defined" );
 		test.ok( data.length == orig.length, "data.length is correct" );
 		test.done();
 	},
@@ -188,7 +212,6 @@ exports.tests = [
 			bufs.push( chunk );
 		});
 		data.on('end', function() {
-			console.log("Got here");
 			var final = Buffer.concat(bufs);
 			test.ok( final.length == orig.length, "Final length is correct" );
 			test.done();
