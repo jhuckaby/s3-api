@@ -203,6 +203,59 @@ const app = {
 		die( "\n" + this.usage(text) );
 	},
 	
+	markdown(text) {
+		// poor man's markdown-to-ANSI-color
+		text = text.toString();
+		
+		// HTML removal, spacing cleanup
+		text = text.replace(/<details>[\s\S]*?<\/details>/g, '');
+		text = text.replace(/<.+?>/g, '').replace(/^[^\#]+\#/, '#').trim();
+		text = text.replace(/\&\w+\;/g, '');
+		text = text.replace(/\n{3,}/g, "\n\n");
+		
+		// links
+		text = text.replace( /\[([\w\s\-\.\'\/\(\)]+?)\]\((.+?)\)/g, function(m_all, m_g1, m_g2) {
+			return '' + yellow.bold.underline(m_g2) + '';
+		} );
+		
+		// headings
+		text = text.replace( /(^|\n)(\#+)\s*([^\n]+)/g, function(m_all, m_g1, m_g2, m_g3) {
+			return m_g1 + gray(m_g2) + ' ' + magenta.bold(m_g3);
+		} );
+		
+		// code blocks
+		text = text.replace( /(\n\`\`\`)(\w+)\n([\S\s]+?)(\n\`\`\`)/g, function(m_all, m_g1, m_g2, m_g3, m_g4) {
+			return "\n" + bold.gray( m_g3.trim() );
+		});
+		text = text.replace( /(\n\`\`\`\n)([\S\s]+?)(\n\`\`\`)/g, function(m_all, m_g1, m_g2, m_g3, m_g4) {
+			return "\n" + bold.gray( m_g2.trim() );
+		});
+		
+		// inline formatting
+		text = text.replace( /\`(.+?)\`/g, function(m_all, m_g1) {
+			return '`' + cyan.bold(m_g1) + '`';
+		} );
+		text = text.replace( /\*\*(.+?)\*\*/g, function(m_all, m_g1) {
+			return '' + yellow.bold(m_g1) + '';
+		} );
+		text = text.replace( /\*(.+?)\*/g, function(m_all, m_g1) {
+			return '' + yellow(m_g1) + '';
+		} );
+		
+		// lists
+		text = text.replace( /\n(\t*\-) ([^\n]+)/g, function(m_all, m_g1, m_g2) {
+			return "\n" + yellow.bold(m_g1) + ' ' + cyan(m_g2);
+		});
+		
+		// tables
+		text = text.replace( /\n(\|)([^\n]+)/g, function(m_all, m_g1, m_g2) {
+			var cols = m_g2.replace(/\|\s*$/, '').split(/\s+\|\s+/).map( function(col) { return yellow(col.trim()); } );
+			return "\n" + gray.bold('| ') + cols.join( gray.bold(' | ') ) + gray.bold(' |');
+		});
+		
+		return text;
+	},
+	
 	shiftS3Spec(bucket_name = 'bucket', key_name = 'key') {
 		// parse s3 spec such as: s3://my-bucket/users/kermit.json
 		if (!args.other || !args.other.length) return false;
@@ -296,25 +349,36 @@ const app = {
 		// show quick help
 		let hcmd = (args.other && args.other.length) ? args.other.shift() : '';
 		if (hcmd) {
-			// quick help for specific command
+			// detailed help for specific command
 			if (!CMD_HELP_TEXT[hcmd]) this.die("Unknown command: " + hcmd);
-			let text = CMD_HELP_TEXT[hcmd];
-			println( "\n" + yellow.bold(hcmd + ':') + " " + green(text) );
+			// let text = CMD_HELP_TEXT[hcmd];
+			// println( "\n" + yellow.bold(hcmd + ':') + " " + green(text) );
+			
+			let docs = fs.readFileSync(Path.join( __dirname, 'docs/CLI.md' ), 'utf8');
+			var re = new RegExp('\\n(\\#\\#\\#\\s+' + hcmd + '\\n[\\S\\s]+?)\\n\\#+');
+			if (docs.match(re)) {
+				var section = RegExp.$1;
+				println( "\n" + this.markdown(section) );
+			}
+			else this.die("No help found for command: " + hcmd);
 		}
 		else {
 			// quick help for all commands
 			print("\n");
+			
 			Object.keys(CMD_HELP_TEXT).forEach( function(ecmd) {
 				let text = CMD_HELP_TEXT[ecmd];
 				println( yellow.bold(ecmd + ':') + " " + green(text) );
 			} );
+			
+			println("\n" + green.bold("Please type " + cyan.bold("`s3 help COMMAND`") + " for details on a specific command.") );
 		}
 	},
 	
 	async cmd_docs() {
-		// emit readme to stdout
+		// emit readme to stdout, format markdown
 		let docs = fs.readFileSync(Path.join( __dirname, 'docs/CLI.md' ), 'utf8');
-		println( "\n" + docs );
+		println( "\n" + this.markdown(docs) );
 	},
 	
 	async cmd_put() {
