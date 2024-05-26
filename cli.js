@@ -34,7 +34,7 @@ for (let key in cli.args) {
 	else if (cli.args[key] === 'false') cli.args[key] = false;
 }
 
-// allow args to be dot.path.syntax
+// allow cli.args to be dot.path.syntax, import into args
 let args = {};
 for (let key in cli.args) {
 	Tools.setPath( args, key, cli.args[key] );
