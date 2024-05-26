@@ -146,7 +146,7 @@ exports.tests = [
 		test.ok( data.hello === "there2", "data.hello expected to be there2, got: " + data.hello );
 		
 		// make sure test2.json is deleted
-		var err = null;
+		let err = null;
 		try { await s3.head({ key: 'test2.json' }); }
 		catch(e) { err = e; }
 		
@@ -207,12 +207,12 @@ exports.tests = [
 		test.ok( !!data, "data is defined" );
 		test.ok( isStream(data), "data is a Stream" );
 		
-		var bufs = [];
+		let bufs = [];
 		data.on('data', function(chunk) {
 			bufs.push( chunk );
 		});
 		data.on('end', function() {
-			var final = Buffer.concat(bufs);
+			let final = Buffer.concat(bufs);
 			test.ok( final.length == orig.length, "Final length is correct" );
 			test.done();
 		} );
@@ -362,7 +362,7 @@ exports.tests = [
 	},
 	
 	async function testNotFoundError(test) {
-		var err = null;
+		let err = null;
 		try { 
 			await s3.head({ key: 'noexist.blah' });
 		}
@@ -376,7 +376,7 @@ exports.tests = [
 	},
 	
 	async function testDeleteNotFoundError(test) {
-		var err = null;
+		let err = null;
 		try { 
 			await s3.delete({ key: 'noexist.blah' });
 		}
@@ -390,7 +390,7 @@ exports.tests = [
 	},
 	
 	async function testCoreS3Error(test) {
-		var err = null;
+		let err = null;
 		try { 
 			let { meta } = await s3.uploadFile({ bucket: 'adm-no-bucket-unit-failo', key: 'spacer.gif', localFile: 'spacer.gif' });
 		}

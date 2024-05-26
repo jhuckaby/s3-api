@@ -371,7 +371,7 @@ The `walk()` method fires an interator for every remote S3 object that exists un
 ```js
 try {
 	// find remote gif files
-	var files = [];
+	let files = [];
 	await s3.walk({ remotePath: 's3dir', iterator: function(file) { files.push(file); } });
 	console.log(files);
 }

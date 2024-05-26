@@ -249,7 +249,7 @@ const app = {
 		
 		// tables
 		text = text.replace( /\n(\|)([^\n]+)/g, function(m_all, m_g1, m_g2) {
-			var cols = m_g2.replace(/\|\s*$/, '').split(/\s+\|\s+/).map( function(col) { return yellow(col.trim()); } );
+			let cols = m_g2.replace(/\|\s*$/, '').split(/\s+\|\s+/).map( function(col) { return yellow(col.trim()); } );
 			return "\n" + gray.bold('| ') + cols.join( gray.bold(' | ') ) + gray.bold(' |');
 		});
 		
@@ -355,9 +355,9 @@ const app = {
 			// println( "\n" + yellow.bold(hcmd + ':') + " " + green(text) );
 			
 			let docs = fs.readFileSync(Path.join( __dirname, 'docs/CLI.md' ), 'utf8');
-			var re = new RegExp('\\n(\\#\\#\\#\\s+' + hcmd + '\\n[\\S\\s]+?)\\n\\#+');
+			let re = new RegExp('\\n(\\#\\#\\#\\s+' + hcmd + '\\n[\\S\\s]+?)\\n\\#+');
 			if (docs.match(re)) {
-				var section = RegExp.$1;
+				let section = RegExp.$1;
 				println( "\n" + this.markdown(section) );
 			}
 			else this.die("No help found for command: " + hcmd);
