@@ -443,6 +443,8 @@ The response object will contain the following keys, which you can destruct into
 |---------------|------|-------------|
 | `meta` | Object | A raw metadata object that is sent back from the AWS S3 service.  It contains information about the request, used for debugging and troubleshooting purposes. |
 
+Note that the AWS SDK does not preserve metadata, such as ACL and storage class, when copying objects.
+
 ### copyFiles
 
 The `copyFiles()` method recursively copies multiple files / directories from S3 to the another S3 location.  Example:
@@ -468,6 +470,7 @@ The method accepts an object containing the following properties:
 | `threads` | Integer | Optionally increase the threads to improve performance.  Defaults to `1`. |
 | `sourceBucket` | String | Optionally override the S3 bucket used to read the source files.  This defaults to the class `bucket` parameter. |
 | `bucket` | String | Optionally specify the S3 bucket where the files are copied to.  This is usually set in the class constructor. |
+| `params` | Object | Optionally specify parameters to the S3 API, for e.g. ACL and Storage Class.  See [Custom S3 Params](https://github.com/jhuckaby/s3-api/blob/main/README.md#custom-s3-params). |
 
 The response object will contain the following keys, which you can destruct into variables as shown above:
 
@@ -495,6 +498,8 @@ catch(err) {
 	// handle error here
 }
 ```
+
+Note that the AWS SDK does not preserve metadata, such as ACL and storage class, when copying objects.
 
 ### move
 
@@ -538,6 +543,8 @@ The response object will contain the following keys, which you can destruct into
 |---------------|------|-------------|
 | `meta` | Object | A raw metadata object that is sent back from the AWS S3 service.  It contains information about the request, used for debugging and troubleshooting purposes. |
 
+Note that the AWS SDK does not preserve metadata, such as ACL and storage class, when moving objects.
+
 ### moveFiles
 
 The `moveFiles()` method recursively moves multiple files / directories from S3 to the another S3 location.  Example:
@@ -563,6 +570,7 @@ The method accepts an object containing the following properties:
 | `threads` | Integer | Optionally increase the threads to improve performance.  Defaults to `1`. |
 | `sourceBucket` | String | Optionally override the S3 bucket used to read the source files.  This defaults to the class `bucket` parameter. |
 | `bucket` | String | Optionally specify the S3 bucket where the files are moved to.  This is usually set in the class constructor. |
+| `params` | Object | Optionally specify parameters to the S3 API, for e.g. ACL and Storage Class.  See [Custom S3 Params](https://github.com/jhuckaby/s3-api/blob/main/README.md#custom-s3-params). |
 
 The response object will contain the following keys, which you can destruct into variables as shown above:
 
@@ -590,6 +598,8 @@ catch(err) {
 	// handle error here
 }
 ```
+
+Note that the AWS SDK does not preserve metadata, such as ACL and storage class, when moving objects.
 
 ### delete
 

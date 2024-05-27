@@ -370,7 +370,8 @@ The `list` command accepts the following optional arguments:
 | `older` | Mixed | Optionally filter files to those modified before a specified date, or delta time.  Dates should be parsable by JavaScript, delta times can be "7 days", etc. |
 | `larger` | Mixed | Optionally filter files to those larger than a specified size, which can be raw bytes, or a string such as "50K", "500MB", "32GB", "1TB", etc. |
 | `smaller` | Mixed | Optionally filter files to those smaller than a specified size, which can be raw bytes, or a string such as "50K", "500MB", "32GB", "1TB", etc. |
-| `json` | Boolean | Optionally return the results in JSON format, rather than an ASCII table. |
+| `json` | Boolean | Optionally return the results in JSON format, rather than an ASCII table.  Combine with `--quiet` for pure JSON output. |
+| `csv` | Boolean | Optionally return the results in CSV format, rather than an ASCII table.  Combine with `--quiet` for pure CSV output. |
 
 A few notes:
 
@@ -395,9 +396,8 @@ The `listFolders` command accepts the following optional arguments:
 | Property Name | Type | Description |
 |---------------|------|-------------|
 | `delimiter` | String | Optionally change the folder delimiter.  It defaults to a forward-slash (`/`). |
-| `json` | Boolean | Optionally return the results in JSON format, rather than an ASCII table. |
-
-Include `--json` to print the results in JSON, rather than ASCII tables.
+| `json` | Boolean | Optionally return the results in JSON format, rather than an ASCII table.  Combine with `--quiet` for pure JSON output. |
+| `csv` | Boolean | Optionally return the results in CSV format, rather than an ASCII table.  Combine with `--quiet` for pure CSV output. |
 
 ### listBuckets
 
@@ -412,7 +412,12 @@ The `listBuckets` command (alias `lb`) fetches the complete list of S3 buckets i
 s3 listBuckets
 ```
 
-Include `--json` to print the results in JSON, rather than an ASCII table.
+The `listBuckets` command accepts the following optional arguments:
+
+| Property Name | Type | Description |
+|---------------|------|-------------|
+| `json` | Boolean | Optionally return the results in JSON format, rather than an ASCII table.  Combine with `--quiet` for pure JSON output. |
+| `csv` | Boolean | Optionally return the results in CSV format, rather than an ASCII table.  Combine with `--quiet` for pure CSV output. |
 
 ### copy
 
@@ -432,7 +437,9 @@ The `copy` command accepts the following optional arguments:
 | Property Name | Type | Description |
 |---------------|------|-------------|
 | `recursive` (`r`) | Boolean | Switch to recursive mode, i.e. call [copyFiles](#copyfiles) instead. |
-| `params` | Object | Optionally pass custom parameters directly to the AWS API.  See [S3 Params](#s3-params). |
+| `params` | Object | Optionally pass custom parameters directly to the AWS API for the destination file.  See [S3 Params](#s3-params). |
+
+Note that the AWS SDK does not preserve metadata, such as ACL and storage class, when copying objects.
 
 ### copyFiles
 
@@ -458,6 +465,9 @@ The `copyFiles` command accepts the following optional arguments:
 | `larger` | Mixed | Optionally filter files to those larger than a specified size, which can be raw bytes, or a string such as "50K", "500MB", "32GB", "1TB", etc. |
 | `smaller` | Mixed | Optionally filter files to those smaller than a specified size, which can be raw bytes, or a string such as "50K", "500MB", "32GB", "1TB", etc. |
 | `threads` | Integer | Optionally increase concurrency to improve performance.  Defaults to `1` thread. |
+| `params` | Object | Optionally pass custom parameters directly to the AWS API for the destination files.  See [S3 Params](#s3-params). |
+
+Note that the AWS SDK does not preserve metadata, such as ACL and storage class, when copying objects.
 
 ### move
 
@@ -477,7 +487,9 @@ The `move` command accepts the following optional arguments:
 | Property Name | Type | Description |
 |---------------|------|-------------|
 | `recursive` (`r`) | Boolean | Switch to recursive mode, i.e. call [moveFiles](#movefiles) instead. |
-| `params` | Object | Optionally pass custom parameters directly to the AWS API.  See [S3 Params](#s3-params). |
+| `params` | Object | Optionally pass custom parameters directly to the AWS API for the destination file.  See [S3 Params](#s3-params). |
+
+Note that the AWS SDK does not preserve metadata, such as ACL and storage class, when moving objects.
 
 ### moveFiles
 
@@ -503,6 +515,9 @@ The `moveFiles` command accepts the following optional arguments:
 | `larger` | Mixed | Optionally filter files to those larger than a specified size, which can be raw bytes, or a string such as "50K", "500MB", "32GB", "1TB", etc. |
 | `smaller` | Mixed | Optionally filter files to those smaller than a specified size, which can be raw bytes, or a string such as "50K", "500MB", "32GB", "1TB", etc. |
 | `threads` | Integer | Optionally increase concurrency to improve performance.  Defaults to `1` thread. |
+| `params` | Object | Optionally pass custom parameters directly to the AWS API for the destination files.  See [S3 Params](#s3-params). |
+
+Note that the AWS SDK does not preserve metadata, such as ACL and storage class, when moving objects.
 
 ### delete
 

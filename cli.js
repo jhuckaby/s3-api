@@ -523,8 +523,30 @@ const app = {
 			let result = await this.s3[cmd](args);
 			if (result && result.meta && result.meta.Body) delete result.meta.Body; // way too verbose
 			
-			if (args.json) println( "\n" + cli.jsonPretty(result || false) );
+			if (args.json) {
+				// json output mode
+				print("\n");
+				console.log( cli.jsonPretty(result || false) );
+			}
+			else if (args.csv) {
+				// csv output mode
+				let rows = [ 'Path,Size,Bytes,Modified,Epoch' ];
+				
+				rows = rows.concat( (result.files || []).map( function(file) {
+					return '"' + [
+						file.key, 
+						Tools.getTextFromBytes( file.size ), 
+						file.size,
+						Tools.formatDate( file.mtime, "[yyyy]/[mm]/[dd] [hh]:[mi]:[ss]" ),
+						file.mtime
+					].join('","') + '"';
+				} ) );
+				
+				print("\n");
+				console.log( rows.join("\n") );
+			}
 			else {
+				// standard (ascii table) output mode
 				let rows = [
 					["File", "Size", "Last Modified"]
 				];
@@ -567,8 +589,40 @@ const app = {
 			let result = await this.s3[cmd](args);
 			if (result && result.meta && result.meta.Body) delete result.meta.Body; // way too verbose
 			
-			if (args.json) println( "\n" + cli.jsonPretty(result || false) );
+			if (args.json) {
+				// json output mode
+				print("\n");
+				console.log( cli.jsonPretty(result || false) );
+			}
+			else if (args.csv) {
+				// csv output mode
+				let rows = [ 'Path,Size,Bytes,Modified,Epoch' ];
+				
+				rows = rows.concat( (result.folders || []).map( function(folder) {
+					return '"' + [
+						folder, 
+						'-', 
+						0,
+						'-',
+						0
+					].join('","') + '"';
+				} ) );
+				
+				rows = rows.concat( (result.files || []).map( function(file) {
+					return '"' + [
+						file.key, 
+						Tools.getTextFromBytes( file.size ), 
+						file.size,
+						Tools.formatDate( file.mtime, "[yyyy]/[mm]/[dd] [hh]:[mi]:[ss]" ),
+						file.mtime
+					].join('","') + '"';
+				} ) );
+				
+				print("\n");
+				console.log( rows.join("\n") );
+			}
 			else {
+				// standard (ascii table) output mode
 				if (result && result.folders && result.folders.length) {
 					rows = [ ["Folders"] ].concat( result.folders.map( function(folder) { return [folder]; } ) );
 					cli.print( 
@@ -627,8 +681,18 @@ const app = {
 			let result = await this.s3[cmd](); // special call convention -- no args
 			if (result && result.meta && result.meta.Body) delete result.meta.Body; // way too verbose
 			
-			if (args.json) println( "\n" + cli.jsonPretty(result || false) );
+			if (args.json) {
+				// json output mode
+				print("\n");
+				console.log( cli.jsonPretty(result || false) );
+			}
+			else if (args.csv) {
+				// csv output mode
+				print("\n");
+				console.log( result.buckets.join("\n") );
+			}
 			else {
+				// standard (ascii table) output mode
 				let rows = [ ["Bucket Name"] ].concat( result.buckets.map( function(bucket) { return [bucket]; } ) );
 				cli.print( 
 					"\n" + cli.table(rows, {
