@@ -619,12 +619,14 @@ The `snapshot` command accepts the following optional arguments:
 | `larger` | Mixed | Optionally filter files to those larger than a specified size, which can be raw bytes, or a string such as "50K", "500MB", "32GB", "1TB", etc. |
 | `smaller` | Mixed | Optionally filter files to those smaller than a specified size, which can be raw bytes, or a string such as "50K", "500MB", "32GB", "1TB", etc. |
 | `threads` | Integer | Optionally increase concurrency to improve performance.  Defaults to `1` thread. |
-| `expire` | String | Optionally expire (delete) the local snapshots after a specified interval, e.g. "30 days". |
+| `expire` | String | Optionally expire (delete) the local snapshots after a specified interval, e.g. "30 days".  *Please see note below.* |
 | `zipArgs` | String | If your snapshot archive is a `.zip` file, you can customize the arguments to the `zip` binary, e.g. `" -r -9"` for max compression. |
 | `tarArgs` | String | If your snapshot archive is a `.tar`, `.tar.gz`, `.tar.xz` or `.tar.bz2` file, you can customize the arguments to the `tar` binary, e.g. `" -I 'gzip -9' -cvf"` for max gzip compression. |
 | `tempDir` | String | Optionally customize the temp directory used internally. |
 
-**Note:** If you use `zipArgs` or `tarArgs`, make sure you insert a leading space in the value, inside quotes, e.g. `--zipArgs " -r -9"` or `--tarArgs " -I 'gzip -9' -cvf"`.  This insures that the sub-argument will be parsed properly.
+**Note:** The `--expire` option assumes that your snapshots live in their own directory.  It will expire **any files** it finds in the directory that are older than N days.  Please use with extreme caution.
+
+**Note:** If you use `--zipArgs` or `--tarArgs`, make sure you insert a leading space in the value, inside quotes, e.g. `--zipArgs " -r -9"` or `--tarArgs " -I 'gzip -9' -cvf"`.  This insures that the sub-argument will be parsed properly.
 
 ### restoreSnapshot
 
@@ -673,12 +675,14 @@ The `backup` command accepts the following optional arguments:
 
 | Property Name | Type | Description |
 |---------------|------|-------------|
-| `expire` | String | Optionally expire (delete) the S3 archives after a specified interval, e.g. "30 days". |
+| `expire` | String | Optionally expire (delete) the S3 archives after a specified interval, e.g. "30 days".  *Please see note below.* |
 | `zipArgs` | String | If your backup is a `.zip` file, you can customize the arguments to the `zip` binary, e.g. `" -r -9"` for max compression. |
 | `tarArgs` | String | If your backup is a `.tar`, `.tar.gz`, `.tar.xz` or `.tar.bz2` file, you can customize the arguments to the `tar` binary, e.g. `" -I 'gzip -9' -cvf"` for max gzip compression. |
 | `tempDir` | String | Optionally customize the temp directory used internally. |
 
-**Note:** If you use `zipArgs` or `tarArgs`, make sure you insert a leading space in the value, inside quotes, e.g. `--zipArgs " -r -9"` or `--tarArgs " -I 'gzip -9' -cvf"`.  This insures that the sub-argument will be parsed properly.
+**Note:** The `--expire` option assumes that your backups live in their own S3 directory.  It will expire **any files** it finds in the S3 directory that are older than N days.  Please use with extreme caution.
+
+**Note:** If you use `--zipArgs` or `--tarArgs`, make sure you insert a leading space in the value, inside quotes, e.g. `--zipArgs " -r -9"` or `--tarArgs " -I 'gzip -9' -cvf"`.  This insures that the sub-argument will be parsed properly.
 
 ### restoreBackup
 
