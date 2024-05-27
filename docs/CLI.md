@@ -57,11 +57,12 @@ The following command-line arguments are shared across multiple commands:
 | `retries` | Integer | The number of retries to attempt before failing each request.  The default is `50`.  Exponential backoff is included. |
 | `tempDir` | String | Optionally customize the temp directory used by snapshots and backups. |
 | `log` | String | Optionally log all output, including debug information, to a timestamped file. |
-| `color` | Boolean | Set this to `false` to disable all ANSI color in the console output. |
-| `pretty` | Boolean | Optionally pretty-print JSON records and output.  Used by [put](#put), [update](#update) and [get](#get). |
-| `quiet` | Boolean | Suppress all output entirely (except for commands like [get](#get)). |
-| `verbose` | Boolean | Enable extra verbose output, for informational or troubleshooting purposes. |
-| `dry` | Boolean | Optionally enable "dry-run" mode, which will take no actual actions against S3 or the local filesystem. |
+| `color` (`c`) | Boolean | Set this to `false` to disable all ANSI color in the console output. |
+| `pretty` (`p`) | Boolean | Optionally pretty-print JSON records and output.  Used by [put](#put), [update](#update) and [get](#get). |
+| `quiet` (`q`) | Boolean | Suppress all output entirely (except for commands like [get](#get)). |
+| `verbose` (`v`) | Boolean | Enable extra verbose output, for informational or troubleshooting purposes. |
+| `dry` (`d`) | Boolean | Optionally enable "dry-run" mode, which will take no actual actions against S3 or the local filesystem. |
+| `recursive` (`r`) | Boolean | Switch [copy](#copy), [move](#move), [delete](#delete), [upload](#upload) and [download](#download) into their multi-file equivalents. |
 
 These arguments should all be specified using a double-dash prefix, e.g. `--region us-west-1`.
 
@@ -250,7 +251,7 @@ It should be noted that data types are inferred when specified on the command-li
 ### get
 
 ```
-s3 get S3_URL
+s3 get S3_URL [--KEY VALUE...]
 ```
 
 The `get` command fetches an object that was written in JSON format (e.g. from [put](#put), or it can just be a JSON file that was uploaded to S3), and parses the JSON for you.  It is then printed to the console.  Example:
@@ -271,7 +272,7 @@ The `get` command accepts the following named arguments:
 ### getStream
 
 ```
-s3 getStream S3_URL
+s3 getStream S3_URL [--KEY VALUE...]
 ```
 
 The `getStream` command streams an S3 object to STDOUT, in any format, so you can pipe it to a file or another command, or for text files send it straight to the console.  Example:
@@ -291,7 +292,7 @@ The `getStream` command accepts the following named arguments:
 ### putStream
 
 ```
-s3 putStream S3_URL
+s3 putStream S3_URL [--KEY VALUE...]
 ```
 
 The `putStream` command reads from STDIN and streams that content up to an S3 record.  The data can be in any format.  Example:
@@ -348,8 +349,8 @@ A typical response looks like this:
 ### list
 
 ```
-s3 list S3_URL
-s3 ls S3_URL
+s3 list S3_URL [--KEY VALUE...]
+s3 ls S3_URL [--KEY VALUE...]
 ```
 
 The `list` command (alias `ls`) fetches and outputs a listing of remote S3 objects that exist under a specified key prefix, and optionally match a specified filter.  It will automatically loop and paginate as required, returning the full set of matched objects regardless of count.  Example:
@@ -379,8 +380,8 @@ A few notes:
 ### listFolders
 
 ```
-s3 listFolders S3_URL
-s3 lf S3_URL
+s3 listFolders S3_URL [--KEY VALUE...]
+s3 lf S3_URL [--KEY VALUE...]
 ```
 
 The `listFolders` command (alias `lf`) fetches and outputs a listing of remote S3 files and "subfolders" that exist under a specified key prefix.  The S3 storage system doesn't *really* have a folder tree, but it fakes one by indexing keys by a delimiter (typically slash).  This method fetches one subfolder level only -- it does not recurse for nested folders.  Example:
@@ -396,26 +397,13 @@ The `listFolders` command accepts the following optional arguments:
 | `delimiter` | String | Optionally change the folder delimiter.  It defaults to a forward-slash (`/`). |
 | `json` | Boolean | Optionally return the results in JSON format, rather than an ASCII table. |
 
-In JSON mode, the response object will contain the following keys:
-
-| Property Name | Type | Description |
-|---------------|------|-------------|
-| `folders` | Array | An array of S3 path prefixes for subfolders just under the current level. |
-| `files` | Array | An array of file objects at the current folder level.  See below for details. |
-
-The items of the `files` array will contain the following properties:
-
-| Property Name | Type | Description |
-|---------------|------|-------------|
-| `key` | String | The object's full S3 key (including prefix if applicable). |
-| `size` | Integer | The objects's size in bytes. |
-| `mtime` | Integer | The object's modification date, as Epoch seconds. |
+Include `--json` to print the results in JSON, rather than ASCII tables.
 
 ### listBuckets
 
 ```
-s3 listBuckets
-s3 lb
+s3 listBuckets [--KEY VALUE...]
+s3 lb [--KEY VALUE...]
 ```
 
 The `listBuckets` command (alias `lb`) fetches the complete list of S3 buckets in your AWS account.  It accepts no options.  Example:
@@ -429,8 +417,8 @@ Include `--json` to print the results in JSON, rather than an ASCII table.
 ### copy
 
 ```
-s3 copy S3_SRC_URL S3_DEST_URL
-s3 cp S3_SRC_URL S3_DEST_URL
+s3 copy S3_SRC_URL S3_DEST_URL [--KEY VALUE...]
+s3 cp S3_SRC_URL S3_DEST_URL [--KEY VALUE...]
 ```
 
 The `copy` command (alias `cp`) copies one S3 object to another S3 location.  This can copy between buckets as well.  Example:
@@ -439,12 +427,17 @@ The `copy` command (alias `cp`) copies one S3 object to another S3 location.  Th
 s3 copy s3://my-bucket/users/oldkermit.json s3://my-bucket/users/newkermit.json
 ```
 
-You can include `--params` here to customize things in the destination like ACL or storage class.  See [S3 Params](#s3-params) for details.
+The `copy` command accepts the following optional arguments:
+
+| Property Name | Type | Description |
+|---------------|------|-------------|
+| `recursive` (`r`) | Boolean | Switch to recursive mode, i.e. call [copyFiles](#copyfiles) instead. |
+| `params` | Object | Optionally pass custom parameters directly to the AWS API.  See [S3 Params](#s3-params). |
 
 ### copyFiles
 
 ```
-s3 copyFiles S3_SRC_URL S3_DEST_URL
+s3 copyFiles S3_SRC_URL S3_DEST_URL [--KEY VALUE...]
 ```
 
 The `copyFiles` command recursively copies multiple files / directories from S3 to another S3 location.  Example:
@@ -469,8 +462,8 @@ The `copyFiles` command accepts the following optional arguments:
 ### move
 
 ```
-s3 move S3_SRC_URL S3_DEST_URL
-s3 mv S3_SRC_URL S3_DEST_URL
+s3 move S3_SRC_URL S3_DEST_URL [--KEY VALUE...]
+s3 mv S3_SRC_URL S3_DEST_URL [--KEY VALUE...]
 ```
 
 The `move` command (alias `mv`) moves one S3 object to another S3 location.  Essentially, it performs a [copy](#copy) followed by a [delete](#delete).  This can move between buckets as well.  Example:
@@ -479,12 +472,17 @@ The `move` command (alias `mv`) moves one S3 object to another S3 location.  Ess
 s3 move s3://my-bucket/users/oldkermit.json s3://my-bucket/users/newkermit.json
 ```
 
-You can include `--params` here to customize things in the destination like ACL or storage class.  See [S3 Params](#s3-params) for details.
+The `move` command accepts the following optional arguments:
+
+| Property Name | Type | Description |
+|---------------|------|-------------|
+| `recursive` (`r`) | Boolean | Switch to recursive mode, i.e. call [moveFiles](#movefiles) instead. |
+| `params` | Object | Optionally pass custom parameters directly to the AWS API.  See [S3 Params](#s3-params). |
 
 ### moveFiles
 
 ```
-s3 moveFiles S3_SRC_URL S3_DEST_URL
+s3 moveFiles S3_SRC_URL S3_DEST_URL [--KEY VALUE...]
 ```
 
 The `moveFiles` command recursively moves multiple files / directories from S3 to another S3 location.  Essentially, it performs a [copy](#copy) followed by a [delete](#delete) on each file.  Example:
@@ -509,8 +507,8 @@ The `moveFiles` command accepts the following optional arguments:
 ### delete
 
 ```
-s3 delete S3_URL
-s3 rm S3_URL
+s3 delete S3_URL [--KEY VALUE...]
+s3 rm S3_URL [--KEY VALUE...]
 ```
 
 The `delete` command (alias `rm`) deletes a single object from S3 given its key.  Please use caution here, as there is no way to undo a delete (unless you use versioned buckets I suppose).  Example:
@@ -519,10 +517,16 @@ The `delete` command (alias `rm`) deletes a single object from S3 given its key.
 s3 delete s3://my-bucket/s3dir/myfile.gif
 ```
 
+The `delete` command accepts the following optional arguments:
+
+| Property Name | Type | Description |
+|---------------|------|-------------|
+| `recursive` (`r`) | Boolean | Switch to recursive mode, i.e. call [deleteFiles](#deletefiles) instead. |
+
 ### deleteFiles
 
 ```
-s3 deleteFiles S3_URL
+s3 deleteFiles S3_URL [--KEY VALUE...]
 ```
 
 The `deleteFiles` command recursively deletes multiple files / directories from S3.  Please use extreme caution here, as there is no way to undo deletes (unless you use versioned buckets I suppose).  Example:
@@ -547,8 +551,8 @@ The `deleteFiles` command accepts the following optional arguments:
 ### upload
 
 ```
-s3 upload LOCAL_FILE S3_URL
-s3 up LOCAL_FILE S3_URL
+s3 upload LOCAL_FILE S3_URL [--KEY VALUE...]
+s3 up LOCAL_FILE S3_URL [--KEY VALUE...]
 ```
 
 The `upload` command (alias `up`) uploads a single file from the local filesystem to an object in S3.  This uses streams and multi-part chunks internally, so it can handle files of any size while using very little memory.  Example:
@@ -563,6 +567,7 @@ The `upload` command accepts the following optional arguments:
 
 | Property Name | Type | Description |
 |---------------|------|-------------|
+| `recursive` (`r`) | Boolean | Switch to recursive mode, i.e. call [uploadFiles](#uploadfiles) instead. |
 | `params` | Object | Optionally pass custom parameters directly to the AWS API.  See [S3 Params](#s3-params). |
 | `compress` | Boolean | Optionally compress the file as it is being uploaded using gzip. |
 | `gzip` | Object | Control the gzip compression settings.  See [Compression](#compression). |
@@ -570,7 +575,7 @@ The `upload` command accepts the following optional arguments:
 ### uploadFiles
 
 ```
-s3 uploadFiles LOCAL_DIR S3_URL
+s3 uploadFiles LOCAL_DIR S3_URL [--KEY VALUE...]
 ```
 
 The `uploadFiles` command recursively uploads multiple files / directories from the local filesystem to S3.  This uses streams and multi-part uploads internally, so it can handle files of any size while using very little memory.  Example:
@@ -600,8 +605,8 @@ The `uploadFiles` command accepts the following optional arguments:
 ### download
 
 ```
-s3 download S3_URL LOCAL_FILE
-s3 dl S3_URL LOCAL_FILE
+s3 download S3_URL LOCAL_FILE [--KEY VALUE...]
+s3 dl S3_URL LOCAL_FILE [--KEY VALUE...]
 ```
 
 The `download` command (alias `dl`) downloads a single object from S3, and saves it to a local file on disk.  The local file's parent directories will be automatically created if needed.  This uses streams internally, so it can handle files of any size while using very little memory.  Example:
@@ -616,12 +621,13 @@ The `download` command accepts the following optional arguments:
 
 | Property Name | Type | Description |
 |---------------|------|-------------|
+| `recursive` (`r`) | Boolean | Switch to recursive mode, i.e. call [downloadFiles](#downloadfiles) instead. |
 | `decompress` | Boolean | Automatically decompress file using gunzip during download. |
 
 ### downloadFiles
 
 ```
-s3 downloadFiles S3_URL LOCAL_DIR
+s3 downloadFiles S3_URL LOCAL_DIR [--KEY VALUE...]
 ```
 
 The `downloadFiles` command recursively downloads multiple files / directories from S3 to the local filesystem.  Local parent directories will be automatically created if needed.  This uses streams internally, so it can handle files of any size while using very little memory.  Example:
@@ -648,10 +654,11 @@ The `downloadFiles` command accepts the following optional arguments:
 ### snapshot
 
 ```
-s3 snapshot S3_URL LOCAL_FILE
+s3 snapshot S3_URL LOCAL_FILE [--KEY VALUE...]
+s3 snap S3_URL LOCAL_FILE [--KEY VALUE...]
 ```
 
-The `snapshot` command takes a "snapshot" of an S3 location, including all nested files and directories, and produces a local `.zip`, `.tar`, `.tar.gz`, `.tar.xz` or `.tar.bz2` archive file.  This snapshot file can then be restored back to S3 using the [restoreSnapshot](#restoresnapshot) command.  Example use:
+The `snapshot` command (alias `snap`) takes a "snapshot" of an S3 location, including all nested files and directories, and produces a local `.zip`, `.tar`, `.tar.gz`, `.tar.xz` or `.tar.bz2` archive file.  This snapshot file can then be restored back to S3 using the [restoreSnapshot](#restoresnapshot) command.  Example use:
 
 ```sh
 s3 snapshot s3://my-bucket/s3dir/images /path/to/snapshot-[yyyy]-[mm]-[dd].zip
@@ -683,10 +690,11 @@ The `snapshot` command accepts the following optional arguments:
 ### restoreSnapshot
 
 ```
-s3 restoreSnapshot LOCAL_FILE S3_URL
+s3 restoreSnapshot LOCAL_FILE S3_URL [--KEY VALUE...]
+s3 rs LOCAL_FILE S3_URL [--KEY VALUE...]
 ```
 
-The `restoreSnapshot` command restores a previously created snapshot back to S3, using a local archive file as a source.  The archive should have been previously created via the [snapshot](#snapshot) command.  Example use:
+The `restoreSnapshot` command (alias `rs`) restores a previously created snapshot back to S3, using a local archive file as a source.  The archive should have been previously created via the [snapshot](#snapshot) command.  Example use:
 
 ```sh
 s3 restoreSnapshot /path/to/snapshot-2024-05-22.zip s3://my-bucket/s3dir/images
@@ -712,10 +720,11 @@ Please note that as of this writing, the S3 API cannot set modification dates up
 ### backup
 
 ```
-s3 backup LOCAL_DIR S3_URL
+s3 backup LOCAL_DIR S3_URL [--KEY VALUE...]
+s3 bk LOCAL_DIR S3_URL [--KEY VALUE...]
 ```
 
-The `backup` command makes a backup of a local filesystem directory, and uploads an archive to S3 for safekeeping.  The archive file can be in `.zip`, `.tar`, `.tar.gz`, `.tar.xz` or `.tar.bz2` format.  Example:
+The `backup` command (alias `bk`) makes a backup of a local filesystem directory, and uploads an archive to S3 for safekeeping.  The archive file can be in `.zip`, `.tar`, `.tar.gz`, `.tar.xz` or `.tar.bz2` format.  Example:
 
 ```sh
 s3 backup /path/to/files s3://my-bucket/backups/mybackup-[yyyy]-[mm]-[dd].zip
@@ -739,10 +748,11 @@ The `backup` command accepts the following optional arguments:
 ### restoreBackup
 
 ```
-s3 restoreBackup S3_URL LOCAL_DIR
+s3 restoreBackup S3_URL LOCAL_DIR [--KEY VALUE...]
+s3 rb S3_URL LOCAL_DIR [--KEY VALUE...]
 ```
 
-The `restoreBackup` command restores a backup previously created via the [backup](#backup) command.  This downloads the backup archive from S3 and expands it back onto the filesystem.  Example use:
+The `restoreBackup` command (alias `rb`) restores a backup previously created via the [backup](#backup) command.  This downloads the backup archive from S3 and expands it back onto the filesystem.  Example use:
 
 ```sh
 s3 restoreBackup s3://my-bucket/backups/mybackup-2024-05-22.zip /path/to/files

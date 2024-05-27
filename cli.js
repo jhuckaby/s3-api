@@ -14,6 +14,30 @@ const pkg = require('./package.json');
 
 cli.global();
 
+cli.mapArgs({
+	'r': 'recursive',
+	'v': 'verbose',
+	'q': 'quiet',
+	'c': 'color',
+	'p': 'pretty',
+	't': 'threads',
+	'd': 'dry',
+	
+	'temp': 'tempDir',
+	'tmp': 'tempDir',
+	'tmpdir': 'tempDir',
+	'tmpDir': 'tempDir',
+	'temp-dir': 'tempDir',
+	'temp_dir': 'tempDir',
+	'tmp-dir': 'tempDir',
+	'tmp_dir': 'tempDir',
+	
+	'dryrun': 'dry',
+	'dryRun': 'dry',
+	'dry-run': 'dry',
+	'dry_run': 'dry'
+});
+
 // optional config file for args defaults
 const config_file = Path.join( process.env.HOME, '.s3-config.json' );
 if (fs.existsSync(config_file)) Tools.mergeHashInto(cli.args, JSON.parse( fs.readFileSync(config_file, 'utf8') ));
@@ -628,6 +652,14 @@ const app = {
 	async cmd_copy() {
 		// copy file
 		// s3 copy s3://my-bucket/users/oldkermit.json s3://my-bucket/users/newkermit.json
+		
+		// allow --recursive to jump over to copyFiles
+		if (args.recursive) {
+			delete args.recursive;
+			cmd = this.cmd = 'copyFiles';
+			return await this.cmd_copyFiles();
+		}
+		
 		this.shiftS3Spec('sourceBucket', 'sourceKey') || this.dieUsage(this.cmd);
 		this.shiftS3Spec('bucket', 'key') || this.dieUsage(this.cmd);
 		await this.doS3Cmd(this.cmd);
@@ -651,6 +683,14 @@ const app = {
 	async cmd_move() {
 		// move file
 		// s3 move s3://my-bucket/users/oldkermit.json s3://my-bucket/users/newkermit.json
+		
+		// allow --recursive to jump over to moveFiles
+		if (args.recursive) {
+			delete args.recursive;
+			cmd = this.cmd = 'moveFiles';
+			return await this.cmd_moveFiles();
+		}
+		
 		this.shiftS3Spec('sourceBucket', 'sourceKey') || this.dieUsage(this.cmd);
 		this.shiftS3Spec('bucket', 'key') || this.dieUsage(this.cmd);
 		await this.doS3Cmd(this.cmd);
@@ -674,6 +714,14 @@ const app = {
 	async cmd_delete() {
 		// delete file
 		// s3 delete s3://my-bucket/s3dir/myfile.gif
+		
+		// allow --recursive to jump over to deleteFiles
+		if (args.recursive) {
+			delete args.recursive;
+			cmd = this.cmd = 'deleteFiles';
+			return await this.cmd_deleteFiles();
+		}
+		
 		this.shiftS3Spec('bucket', 'key') || this.dieUsage(this.cmd);
 		await this.doS3Cmd(this.cmd);
 	},
@@ -687,6 +735,14 @@ const app = {
 	async cmd_upload() {
 		// upload single file -- alias for uploadFile
 		// s3 upload /path/to/image.gif s3://my-bucket/s3dir/myfile.gif
+		
+		// allow --recursive to jump over to uploadFiles
+		if (args.recursive) {
+			delete args.recursive;
+			cmd = this.cmd = 'uploadFiles';
+			return await this.cmd_uploadFiles();
+		}
+		
 		this.shiftOther('localFile') || this.dieUsage(this.cmd);
 		this.shiftS3Spec('bucket', 'key') || this.dieUsage(this.cmd);
 		await this.doS3Cmd('uploadFile');
@@ -707,6 +763,14 @@ const app = {
 	async cmd_download() {
 		// upload single file -- alias for downloadFile
 		// s3 download s3://my-bucket/s3dir/myfile.gif /path/to/image.gif
+		
+		// allow --recursive to jump over to downloadFiles
+		if (args.recursive) {
+			delete args.recursive;
+			cmd = this.cmd = 'downloadFiles';
+			return await this.cmd_downloadFiles();
+		}
+		
 		this.shiftS3Spec('bucket', 'key') || this.dieUsage(this.cmd);
 		this.shiftOther('localFile') || this.dieUsage(this.cmd);
 		await this.doS3Cmd('downloadFile');
@@ -840,6 +904,12 @@ const app = {
 		println( "\n" + cyan.bold("Snapshot written to: ") + yellow.bold(arch_file) );
 	},
 	
+	async cmd_snap() {
+		// alias for snapshot
+		cmd = this.cmd = 'snapshot';
+		await this.cmd_snapshot();
+	},
+	
 	async cmd_restoreSnapshot() {
 		// expand local archive, upload files to s3
 		// s3 restoreSnapshot /path/to/backup-2024-05-22.zip s3://my-bucket/s3dir/images
@@ -921,6 +991,12 @@ const app = {
 		Tools.rimraf.sync(temp_dir);
 		
 		println( "\n" + cyan.bold("Snapshot restored to: ") + yellow.bold('s3://' + args.bucket + '/' + args.remotePath) );
+	},
+	
+	async cmd_rs() {
+		// alias for restoreSnapshot
+		cmd = this.cmd = 'restoreSnapshot';
+		await this.cmd_restoreSnapshot();
 	},
 	
 	async cmd_backup() {
@@ -1005,6 +1081,12 @@ const app = {
 		println( "\n" + cyan.bold("Backup saved to: ") + yellow.bold('s3://' + args.bucket + '/' + args.key) );
 	},
 	
+	async cmd_bk() {
+		// alias for backup
+		cmd = this.cmd = 'backup';
+		await this.cmd_backup();
+	},
+	
 	async cmd_restoreBackup() {
 		// download and restore backup to local filesystem
 		// s3 restoreBackup s3://my-bucket/backups/mybackup-2024-05-22.zip /path/to/files
@@ -1078,6 +1160,12 @@ const app = {
 		
 		// and we're done
 		println( "\n" + cyan.bold("Backup restored to: ") + yellow.bold(dest_path) );
+	},
+	
+	async cmd_rb() {
+		// alias for restoreBackup
+		cmd = this.cmd = 'restoreBackup';
+		await this.cmd_restoreBackup();
 	}
 	
 }; // app

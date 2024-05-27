@@ -20,7 +20,7 @@
 		"pixl-cache": "^1.0.6",
 		"pixl-class-util": "^1.0.0",
 		"pixl-tools": "^1.0.29",
-		"pixl-cli": "^1.0.17"
+		"pixl-cli": "^1.0.18"
 	},
 	"devDependencies": {
 		"pixl-unit": "^1.0.0"
