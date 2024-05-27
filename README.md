@@ -576,10 +576,10 @@ To log everything to the console, you can simulate a [pixl-logger](https://githu
 ```js
 s3.attachLogAgent( {
 	debug: function(level, msg, data) {
-		console.log( code, msg, data ):
+		console.log( code, msg, data );
 	},
 	error: function(code, msg, data) {
-		console.error( code, msg, data ):
+		console.error( code, msg, data );
 	}
 } );
 ```
