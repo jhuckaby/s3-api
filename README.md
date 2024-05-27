@@ -787,7 +787,7 @@ Using dot.path.notation you can add, replace and delete keys, access nested keys
 
 ### Backups
 
-The [backup](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#backup) command makes a point-in-time backup of a local directory, compresses it using `.zip`, `.tar` or `.tar.gz`, and uploads the archive to S3.  Example:
+The [backup](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#backup) command makes a point-in-time backup of a local directory, compresses it using `.zip`, `.tar`, `.tar.gz`, `.tar.xz` or `.tar.bz2`, and uploads the archive to S3.  Example:
 
 ```sh
 s3 backup /path/to/files s3://my-bucket/backups/mybackup-[yyyy]-[mm]-[dd].zip
@@ -811,7 +811,7 @@ s3 restoreBackup s3://my-bucket/backups/mybackup-2024-05-22.zip /path/to/files -
 
 ### Snapshots
 
-A "snapshot" works in the opposite direction of a backup.  A snapshot is a effectively a point-in-time backup of an S3 location, including all nested files and directories.  The [snapshot](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#snapshot) command downloads all S3 files and writes a local `.zip`, `.tar` or `.tar.gz` archive file.  Example:
+A "snapshot" works in the opposite direction of a backup.  A snapshot is a effectively a point-in-time backup of an S3 location, including all nested files and directories.  The [snapshot](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#snapshot) command downloads all S3 files and writes a local `.zip`, `.tar`, `.tar.gz`, `.tar.xz` or `.tar.bz2` archive file.  Example:
 
 ```sh
 s3 snapshot s3://my-bucket/s3dir/images /path/to/snapshot-[yyyy]-[mm]-[dd].zip

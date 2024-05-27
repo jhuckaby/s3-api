@@ -128,7 +128,7 @@ For controlling the compression level when using [snapshot](#snapshot) and [back
 s3 snapshot s3://my-bucket/s3dir/images /path/to/backup-[yyyy]-[mm]-[dd].zip --zipArgs " -r -9"
 ```
 
-And when creating `.tar.gz` snapshots or backups, use the `--tarArgs` argument.  This is passed directly to the `tar` utility:
+And when creating `.tar`, `.tar.gz`, `.tar.xz` or `.tar.bz2` snapshots or backups, use the `--tarArgs` argument.  This is passed directly to the `tar` utility:
 
 ```sh
 s3 snapshot s3://my-bucket/s3dir/images /path/to/backup-[yyyy]-[mm]-[dd].tar.gz --tarArgs " -I 'gzip -9' -cvf"
@@ -599,7 +599,7 @@ The `deleteFiles` command accepts the following optional arguments:
 s3 snapshot S3_URL LOCAL_FILE
 ```
 
-The `snapshot` command takes a "snapshot" of an S3 location, including all nested files and directories, and produces a local `.zip`, `.tar` or `.tar.gz` archive file.  This snapshot file can then be restored back to S3 using the [restoreSnapshot](#restoresnapshot) command.  Example use:
+The `snapshot` command takes a "snapshot" of an S3 location, including all nested files and directories, and produces a local `.zip`, `.tar`, `.tar.gz`, `.tar.xz` or `.tar.bz2` archive file.  This snapshot file can then be restored back to S3 using the [restoreSnapshot](#restoresnapshot) command.  Example use:
 
 ```sh
 s3 snapshot s3://my-bucket/s3dir/images /path/to/snapshot-[yyyy]-[mm]-[dd].zip
@@ -621,7 +621,7 @@ The `snapshot` command accepts the following optional arguments:
 | `threads` | Integer | Optionally increase concurrency to improve performance.  Defaults to `1` thread. |
 | `expire` | String | Optionally expire (delete) the local snapshots after a specified interval, e.g. "30 days". |
 | `zipArgs` | String | If your snapshot archive is a `.zip` file, you can customize the arguments to the `zip` binary, e.g. `" -r -9"` for max compression. |
-| `tarArgs` | String | If your snapshot archive is a `.tar` or `.tar.gz` file, you can customize the arguments to the `tar` binary, e.g. `" -I 'gzip -9' -cvf"` for max compression. |
+| `tarArgs` | String | If your snapshot archive is a `.tar`, `.tar.gz`, `.tar.xz` or `.tar.bz2` file, you can customize the arguments to the `tar` binary, e.g. `" -I 'gzip -9' -cvf"` for max gzip compression. |
 | `tempDir` | String | Optionally customize the temp directory used internally. |
 
 **Note:** If you use `zipArgs` or `tarArgs`, make sure you insert a leading space in the value, inside quotes, e.g. `--zipArgs " -r -9"` or `--tarArgs " -I 'gzip -9' -cvf"`.  This insures that the sub-argument will be parsed properly.
@@ -661,7 +661,7 @@ Please note that as of this writing, the S3 API cannot set modification dates up
 s3 backup LOCAL_DIR S3_URL
 ```
 
-The `backup` command makes a backup of a local filesystem directory, and uploads an archive to S3 for safekeeping.  The archive file can be in `.zip`, `.tar` or `.tar.gz` format.  Example:
+The `backup` command makes a backup of a local filesystem directory, and uploads an archive to S3 for safekeeping.  The archive file can be in `.zip`, `.tar`, `.tar.gz`, `.tar.xz` or `.tar.bz2` format.  Example:
 
 ```sh
 s3 backup /path/to/files s3://my-bucket/backups/mybackup-[yyyy]-[mm]-[dd].zip
@@ -675,7 +675,7 @@ The `backup` command accepts the following optional arguments:
 |---------------|------|-------------|
 | `expire` | String | Optionally expire (delete) the S3 archives after a specified interval, e.g. "30 days". |
 | `zipArgs` | String | If your backup is a `.zip` file, you can customize the arguments to the `zip` binary, e.g. `" -r -9"` for max compression. |
-| `tarArgs` | String | If your backup is a `.tar` or `.tar.gz` file, you can customize the arguments to the `tar` binary, e.g. `" -I 'gzip -9' -cvf"` for max compression. |
+| `tarArgs` | String | If your backup is a `.tar`, `.tar.gz`, `.tar.xz` or `.tar.bz2` file, you can customize the arguments to the `tar` binary, e.g. `" -I 'gzip -9' -cvf"` for max gzip compression. |
 | `tempDir` | String | Optionally customize the temp directory used internally. |
 
 **Note:** If you use `zipArgs` or `tarArgs`, make sure you insert a leading space in the value, inside quotes, e.g. `--zipArgs " -r -9"` or `--tarArgs " -I 'gzip -9' -cvf"`.  This insures that the sub-argument will be parsed properly.

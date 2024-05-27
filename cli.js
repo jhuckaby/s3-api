@@ -747,9 +747,9 @@ const app = {
 			let zip_args = args.zipArgs || '-r';
 			arch_cmd = `${zip_bin} ${zip_args} "${arch_file}" .`;
 		}
-		else if (arch_file.match(/\.tar(\.gz)?$/i)) {
+		else if (arch_file.match(/\.tar(\.gz|\.xz|\.bz2)?$/i)) {
 			let tar_bin = Tools.findBinSync('tar') || this.die('Cannot locate `tar` binary.');
-			let tar_args = args.tarArgs || (arch_file.match(/\.gz$/i) ? '-zcvf' : '-cvf');
+			let tar_args = args.tarArgs || '-acvf';
 			arch_cmd = `${tar_bin} ${tar_args} "${arch_file}" .`;
 		}
 		else this.die('Unsupported archive format: ' + arch_file);
@@ -852,9 +852,9 @@ const app = {
 			let unzip_bin = Tools.findBinSync('unzip') || this.die('Cannot locate `unzip` binary.');
 			arch_cmd = `${unzip_bin} "${arch_file}"`;
 		}
-		else if (arch_file.match(/\.tar\.gz$/i)) {
+		else if (arch_file.match(/\.tar(\.gz|\.xz|\.bz2)?$/i)) {
 			let tar_bin = Tools.findBinSync('tar') || this.die('Cannot locate `tar` binary.');
-			arch_cmd = `${tar_bin} -zxvf "${arch_file}"`;
+			arch_cmd = `${tar_bin} -xvf "${arch_file}"`;
 		}
 		else this.die('Unsupported archive format: ' + arch_file);
 		
@@ -923,10 +923,10 @@ const app = {
 			let zip_args = args.zipArgs || '-r';
 			arch_cmd = `${zip_bin} ${zip_args} "${arch_file}" .`;
 		}
-		else if (args.key.match(/(\.tar|\.tar\.gz)$/i)) {
+		else if (args.key.match(/(\.tar|\.tar\.gz|\.tar\.xz|\.tar\.bz2)$/i)) {
 			arch_file += RegExp.$1;
 			let tar_bin = Tools.findBinSync('tar') || this.die('Cannot locate `tar` binary.');
-			let tar_args = args.tarArgs || (arch_file.match(/\.gz$/i) ? '-zcvf' : '-cvf');
+			let tar_args = args.tarArgs || '-acvf';
 			arch_cmd = `${tar_bin} ${tar_args} "${arch_file}" .`;
 		}
 		else this.die('Unsupported archive format: ' + args.key);
@@ -1001,10 +1001,10 @@ const app = {
 			arch_file += '.zip';
 			arch_cmd = `${unzip_bin} -o "${arch_file}"`;
 		}
-		else if (args.key.match(/\.tar\.gz$/i)) {
+		else if (args.key.match(/(\.tar|\.tar\.gz|\.tar\.xz|\.tar\.bz2)$/i)) {
+			arch_file += RegExp.$1;
 			let tar_bin = Tools.findBinSync('tar') || this.die('Cannot locate `tar` binary.');
-			arch_file += '.tar.gz';
-			arch_cmd = `${tar_bin} -zxvf "${arch_file}"`;
+			arch_cmd = `${tar_bin} -xvf "${arch_file}"`;
 		}
 		else this.die('Unsupported archive format: ' + args.key);
 		
