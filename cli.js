@@ -90,20 +90,20 @@ const CMD_HELP_TEXT = {
 	// delete: `s3 delete --bucket my-bucket --key "s3dir/myfile.gif"`,
 	delete: `s3 delete s3://my-bucket/s3dir/myfile.gif`,
 	
+	// deleteFiles: `s3 deleteFiles --bucket my-bucket --remotePath "s3dir/uploaded" --filespec '\\.gif$'`,
+	deleteFiles: `s3 deleteFiles s3://my-bucket/s3dir/uploaded --filespec '\\.gif$'`,
+	
 	// uploadFile: `s3 uploadFile --bucket my-bucket --localFile "/path/to/image.gif" --key "s3dir/myfile.gif"`,
 	upload: `s3 upload /path/to/image.gif s3://my-bucket/s3dir/myfile.gif`,
-	
-	// downloadFile: `s3 downloadFile --bucket my-bucket --key "s3dir/myfile.gif" --localFile "/path/to/image.gif"`,
-	download: `s3 download s3://my-bucket/s3dir/myfile.gif /path/to/image.gif`,
 	
 	// uploadFiles: `s3 uploadFiles --bucket my-bucket --localPath "/path/to/images" --remotePath "s3dir/uploaded"`,
 	uploadFiles: `s3 uploadFiles /path/to/images s3://my-bucket/s3dir/uploaded`,
 	
+	// downloadFile: `s3 downloadFile --bucket my-bucket --key "s3dir/myfile.gif" --localFile "/path/to/image.gif"`,
+	download: `s3 download s3://my-bucket/s3dir/myfile.gif /path/to/image.gif`,
+	
 	// downloadFiles: `s3 downloadFiles --bucket my-bucket --remotePath "s3dir/uploaded" --localPath "/path/to/images"`,
 	downloadFiles: `s3 downloadFiles s3://my-bucket/s3dir/uploaded /path/to/images`,
-	
-	// deleteFiles: `s3 deleteFiles --bucket my-bucket --remotePath "s3dir/uploaded" --filespec '\\.gif$'`,
-	deleteFiles: `s3 deleteFiles s3://my-bucket/s3dir/uploaded --filespec '\\.gif$'`,
 	
 	// snapshot: `s3 snapshot --bucket my-bucket --remotePath "s3dir/images" --localFile "/path/to/backup-[yyyy]-[mm]-[dd].zip"`,
 	snapshot: `s3 snapshot s3://my-bucket/s3dir/images /path/to/snapshot-[yyyy]-[mm]-[dd].zip`,

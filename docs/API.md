@@ -20,13 +20,15 @@ This document contains a complete API reference for **s3-api**.
 	* [listBuckets](#listbuckets)
 	* [walk](#walk)
 	* [copy](#copy)
+	* [copyFiles](#copyfiles)
 	* [move](#move)
+	* [moveFiles](#movefiles)
 	* [delete](#delete)
-	* [uploadFile](#uploadfile)
-	* [downloadFile](#downloadfile)
-	* [uploadFiles](#uploadfiles)
-	* [downloadFiles](#downloadfiles)
 	* [deleteFiles](#deletefiles)
+	* [uploadFile](#uploadfile)
+	* [uploadFiles](#uploadfiles)
+	* [downloadFile](#downloadfile)
+	* [downloadFiles](#downloadfiles)
 	* [putBuffer](#putbuffer)
 	* [getBuffer](#getbuffer)
 	* [putStream](#putstream)
@@ -618,6 +620,59 @@ The response object will contain the following keys, which you can destruct into
 
 **Note:** This will also remove the object from the [Cache](https://github.com/jhuckaby/s3-api/blob/main/README.md#caching), if enabled.
 
+### deleteFiles
+
+The `deleteFiles()` method recursively deletes multiple files / directories from S3.  Please use extreme caution here, as there is no way to undo deletes (unless you use versioned buckets I suppose).  Example:
+
+```js
+try {
+	// delete selected files
+	let { files, bytes } = await s3.deleteFiles({ remotePath: 's3dir/uploadedimages', filespec: /\.gif$/ });
+}
+catch(err) {
+	// handle error here
+}
+```
+
+The method accepts an object containing the following properties:
+
+| Property Name | Type | Description |
+|---------------|------|-------------|
+| `remotePath` | String | **(Required)** The base S3 path to delete files from.  This may be prepended with a `prefix` if set on the class instance. |
+| `filespec` | RegExp | Optionally filter the S3 files using a regular expression, matched on the filenames. |
+| `filter` | Function | Optionally provide a function to decide whether or not to delete each file.  See below for usage. |
+| `older` | Mixed | Optionally filter the S3 files based on their modification date, i.e. must be older than the specified number of seconds.  You can also specify a string here, e.g. "7 days". |
+| `threads` | Integer | Optionally increase the threads to improve performance at the cost of additional HTTP connections. |
+| `bucket` | String | Optionally specify the S3 bucket where the record is stored.  This is usually set in the class constructor. |
+
+Please note that `filter` and `older` are mutually exclusive.  Only one may be provided (the reason is, the `older` feature uses `filter` internally).
+
+The response object will contain the following keys, which you can destruct into variables as shown above:
+
+| Property Name | Type | Description |
+|---------------|------|-------------|
+| `files` | Array | An array of files that were deleted.  Each item in the array is an object with `key`, `size` and `mtime` properties. |
+| `bytes` | Integer | The total number of bytes deleted. |
+
+If you specify a `filter` function, it is called for each matching S3 key, and passed an object containing `key`, `size` and `mtime` properties.  Return `true` to delete the file, or `false` to skip it.  Example use:
+
+```js
+try {
+	// delete selected files
+	let { files } = await s3.deleteFiles({ 
+		remotePath: 's3dir/uploadedimages', 
+		
+		filter: function(file) {
+			// only delete large files 1MB+
+			return file.size > 1024 * 1024;
+		}
+	});
+}
+catch(err) {
+	// handle error here
+}
+```
+
 ### uploadFile
 
 The `uploadFile()` method uploads a file from the local filesystem to an object in S3.  This uses streams and multi-part chunks internally, so it can handle files of any size while using very little memory.  Example:
@@ -649,37 +704,6 @@ The response object will contain the following keys, which you can destruct into
 | `meta` | Object | A raw metadata object that is sent back from the AWS S3 service.  It contains information about the request, used for debugging and troubleshooting purposes. |
 
 Note that you can omit the filename portion of the `key` property if you want.  Specifically, if the `key` ends with a slash (`/`) this will trigger the library to automatically append the local filename to the end of the S3 key.
-
-### downloadFile
-
-The `downloadFile()` method downloads an object from S3, and saves it to a local file on disk.  The local file's parent directories will be automatically created if needed.  This uses streams internally, so it can handle files of any size while using very little memory.  Example:
-
-```js
-try {
-	// download file
-	let { meta } = await s3.downloadFile({ key: 's3dir/myfile.gif', localFile: '/path/to/image.gif' });
-}
-catch(err) {
-	// handle error here
-}
-```
-
-The method accepts an object containing the following properties:
-
-| Property Name | Type | Description |
-|---------------|------|-------------|
-| `key` | String | **(Required)** The S3 key of the object to download.  This may be prepended with a `prefix` if set on the class instance. |
-| `localFile` | String | **(Required)** A path to the destination file on local disk. |
-| `decompress` | Boolean | Set this to `true` to automatically decompress the file during download.  Defaults to `false`.  See [Compression](https://github.com/jhuckaby/s3-api/blob/main/README.md#compression). |
-| `bucket` | String | Optionally specify the S3 bucket where the record is stored.  This is usually set in the class constructor. |
-
-The response object will contain the following keys, which you can destruct into variables as shown above:
-
-| Property Name | Type | Description |
-|---------------|------|-------------|
-| `meta` | Object | A raw metadata object that is sent back from the AWS S3 service.  It contains information about the request, used for debugging and troubleshooting purposes. |
-
-Note that you can omit the filename portion of the `localFile` property if you want.  Specifically, if the `localFile` ends with a slash (`/`) this will trigger the library to automatically append the filename from the S3 key.
 
 ### uploadFiles
 
@@ -736,6 +760,37 @@ catch(err) {
 }
 ```
 
+### downloadFile
+
+The `downloadFile()` method downloads an object from S3, and saves it to a local file on disk.  The local file's parent directories will be automatically created if needed.  This uses streams internally, so it can handle files of any size while using very little memory.  Example:
+
+```js
+try {
+	// download file
+	let { meta } = await s3.downloadFile({ key: 's3dir/myfile.gif', localFile: '/path/to/image.gif' });
+}
+catch(err) {
+	// handle error here
+}
+```
+
+The method accepts an object containing the following properties:
+
+| Property Name | Type | Description |
+|---------------|------|-------------|
+| `key` | String | **(Required)** The S3 key of the object to download.  This may be prepended with a `prefix` if set on the class instance. |
+| `localFile` | String | **(Required)** A path to the destination file on local disk. |
+| `decompress` | Boolean | Set this to `true` to automatically decompress the file during download.  Defaults to `false`.  See [Compression](https://github.com/jhuckaby/s3-api/blob/main/README.md#compression). |
+| `bucket` | String | Optionally specify the S3 bucket where the record is stored.  This is usually set in the class constructor. |
+
+The response object will contain the following keys, which you can destruct into variables as shown above:
+
+| Property Name | Type | Description |
+|---------------|------|-------------|
+| `meta` | Object | A raw metadata object that is sent back from the AWS S3 service.  It contains information about the request, used for debugging and troubleshooting purposes. |
+
+Note that you can omit the filename portion of the `localFile` property if you want.  Specifically, if the `localFile` ends with a slash (`/`) this will trigger the library to automatically append the filename from the S3 key.
+
 ### downloadFiles
 
 The `downloadFiles()` method recursively downloads multiple files / directories from S3 to the local filesystem.  Local parent directories will be automatically created if needed.  This uses streams internally, so it can handle files of any size while using very little memory.  Example:
@@ -781,59 +836,6 @@ try {
 		
 		filter: function(file) {
 			// only download large files 1MB+
-			return file.size > 1024 * 1024;
-		}
-	});
-}
-catch(err) {
-	// handle error here
-}
-```
-
-### deleteFiles
-
-The `deleteFiles()` method recursively deletes multiple files / directories from S3.  Please use extreme caution here, as there is no way to undo deletes (unless you use versioned buckets I suppose).  Example:
-
-```js
-try {
-	// delete selected files
-	let { files, bytes } = await s3.deleteFiles({ remotePath: 's3dir/uploadedimages', filespec: /\.gif$/ });
-}
-catch(err) {
-	// handle error here
-}
-```
-
-The method accepts an object containing the following properties:
-
-| Property Name | Type | Description |
-|---------------|------|-------------|
-| `remotePath` | String | **(Required)** The base S3 path to delete files from.  This may be prepended with a `prefix` if set on the class instance. |
-| `filespec` | RegExp | Optionally filter the S3 files using a regular expression, matched on the filenames. |
-| `filter` | Function | Optionally provide a function to decide whether or not to delete each file.  See below for usage. |
-| `older` | Mixed | Optionally filter the S3 files based on their modification date, i.e. must be older than the specified number of seconds.  You can also specify a string here, e.g. "7 days". |
-| `threads` | Integer | Optionally increase the threads to improve performance at the cost of additional HTTP connections. |
-| `bucket` | String | Optionally specify the S3 bucket where the record is stored.  This is usually set in the class constructor. |
-
-Please note that `filter` and `older` are mutually exclusive.  Only one may be provided (the reason is, the `older` feature uses `filter` internally).
-
-The response object will contain the following keys, which you can destruct into variables as shown above:
-
-| Property Name | Type | Description |
-|---------------|------|-------------|
-| `files` | Array | An array of files that were deleted.  Each item in the array is an object with `key`, `size` and `mtime` properties. |
-| `bytes` | Integer | The total number of bytes deleted. |
-
-If you specify a `filter` function, it is called for each matching S3 key, and passed an object containing `key`, `size` and `mtime` properties.  Return `true` to delete the file, or `false` to skip it.  Example use:
-
-```js
-try {
-	// delete selected files
-	let { files } = await s3.deleteFiles({ 
-		remotePath: 's3dir/uploadedimages', 
-		
-		filter: function(file) {
-			// only delete large files 1MB+
 			return file.size > 1024 * 1024;
 		}
 	});

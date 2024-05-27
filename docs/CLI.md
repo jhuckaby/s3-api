@@ -27,13 +27,15 @@ Please note that the standard [AWS S3 CLI](https://docs.aws.amazon.com/cli/lates
 	* [listFolders](#listfolders)
 	* [listBuckets](#listbuckets)
 	* [copy](#copy)
+	* [copyFiles](#copyfiles)
 	* [move](#move)
+	* [moveFiles](#movefiles)
 	* [delete](#delete)
-	* [upload](#upload)
-	* [download](#download)
-	* [uploadFiles](#uploadfiles)
-	* [downloadFiles](#downloadfiles)
 	* [deleteFiles](#deletefiles)
+	* [upload](#upload)
+	* [uploadFiles](#uploadfiles)
+	* [download](#download)
+	* [downloadFiles](#downloadfiles)
 	* [snapshot](#snapshot)
 	* [restoreSnapshot](#restoresnapshot)
 	* [backup](#backup)
@@ -517,6 +519,31 @@ The `delete` command (alias `rm`) deletes a single object from S3 given its key.
 s3 delete s3://my-bucket/s3dir/myfile.gif
 ```
 
+### deleteFiles
+
+```
+s3 deleteFiles S3_URL
+```
+
+The `deleteFiles` command recursively deletes multiple files / directories from S3.  Please use extreme caution here, as there is no way to undo deletes (unless you use versioned buckets I suppose).  Example:
+
+```sh
+s3 deleteFiles s3://my-bucket/s3dir/uploaded
+```
+
+The `deleteFiles` command accepts the following optional arguments:
+
+| Property Name | Type | Description |
+|---------------|------|-------------|
+| `filespec` | RegExp | Optionally filter the S3 filenames using a regular expression (matched only on the filenames). |
+| `include` | RegExp | Optionally restrict files using an inclusion regular expression pattern (matched on the whole file paths). |
+| `exclude` | RegExp | Optionally exclude files using an exclusion regular expression pattern (matched on the whole file paths). |
+| `newer` | Mixed | Optionally filter files to those modified after a specified date, or delta time.  Dates should be parsable by JavaScript, delta times can be "7 days", etc. |
+| `older` | Mixed | Optionally filter files to those modified before a specified date, or delta time.  Dates should be parsable by JavaScript, delta times can be "7 days", etc. |
+| `larger` | Mixed | Optionally filter files to those larger than a specified size, which can be raw bytes, or a string such as "50K", "500MB", "32GB", "1TB", etc. |
+| `smaller` | Mixed | Optionally filter files to those smaller than a specified size, which can be raw bytes, or a string such as "50K", "500MB", "32GB", "1TB", etc. |
+| `threads` | Integer | Optionally increase concurrency to improve performance.  Defaults to `1` thread. |
+
 ### upload
 
 ```
@@ -539,27 +566,6 @@ The `upload` command accepts the following optional arguments:
 | `params` | Object | Optionally pass custom parameters directly to the AWS API.  See [S3 Params](#s3-params). |
 | `compress` | Boolean | Optionally compress the file as it is being uploaded using gzip. |
 | `gzip` | Object | Control the gzip compression settings.  See [Compression](#compression). |
-
-### download
-
-```
-s3 download S3_URL LOCAL_FILE
-s3 dl S3_URL LOCAL_FILE
-```
-
-The `download` command (alias `dl`) downloads a single object from S3, and saves it to a local file on disk.  The local file's parent directories will be automatically created if needed.  This uses streams internally, so it can handle files of any size while using very little memory.  Example:
-
-```sh
-s3 download s3://my-bucket/s3dir/myfile.gif /path/to/image.gif
-```
-
-Note that you can omit the filename portion of the local file path if you want.  Specifically, if the local path ends with a slash (`/`) the library will automatically append the filename from the S3 key.
-
-The `download` command accepts the following optional arguments:
-
-| Property Name | Type | Description |
-|---------------|------|-------------|
-| `decompress` | Boolean | Automatically decompress file using gunzip during download. |
 
 ### uploadFiles
 
@@ -591,6 +597,27 @@ The `uploadFiles` command accepts the following optional arguments:
 | `suffix` | String | Optionally append a suffix to every destination S3 key, e.g. `.gz` for compressed files. |
 | `params` | Object | Optionally specify parameters to the S3 API, for e.g. ACL and Storage Class.  See [S3 Params](#s3-params). |
 
+### download
+
+```
+s3 download S3_URL LOCAL_FILE
+s3 dl S3_URL LOCAL_FILE
+```
+
+The `download` command (alias `dl`) downloads a single object from S3, and saves it to a local file on disk.  The local file's parent directories will be automatically created if needed.  This uses streams internally, so it can handle files of any size while using very little memory.  Example:
+
+```sh
+s3 download s3://my-bucket/s3dir/myfile.gif /path/to/image.gif
+```
+
+Note that you can omit the filename portion of the local file path if you want.  Specifically, if the local path ends with a slash (`/`) the library will automatically append the filename from the S3 key.
+
+The `download` command accepts the following optional arguments:
+
+| Property Name | Type | Description |
+|---------------|------|-------------|
+| `decompress` | Boolean | Automatically decompress file using gunzip during download. |
+
 ### downloadFiles
 
 ```
@@ -617,31 +644,6 @@ The `downloadFiles` command accepts the following optional arguments:
 | `threads` | Integer | Optionally increase concurrency to improve performance.  Defaults to `1` thread. |
 | `decompress` | Boolean | Automatically decompress all files using gunzip during upload.  Disabled by default. |
 | `strip` | RegExp | Optionally strip a suffix from every destination filename, e.g. `\.gz$` to strip the `.gz` suffix off of compressed files. |
-
-### deleteFiles
-
-```
-s3 deleteFiles S3_URL
-```
-
-The `deleteFiles` command recursively deletes multiple files / directories from S3.  Please use extreme caution here, as there is no way to undo deletes (unless you use versioned buckets I suppose).  Example:
-
-```sh
-s3 deleteFiles s3://my-bucket/s3dir/uploaded
-```
-
-The `deleteFiles` command accepts the following optional arguments:
-
-| Property Name | Type | Description |
-|---------------|------|-------------|
-| `filespec` | RegExp | Optionally filter the S3 filenames using a regular expression (matched only on the filenames). |
-| `include` | RegExp | Optionally restrict files using an inclusion regular expression pattern (matched on the whole file paths). |
-| `exclude` | RegExp | Optionally exclude files using an exclusion regular expression pattern (matched on the whole file paths). |
-| `newer` | Mixed | Optionally filter files to those modified after a specified date, or delta time.  Dates should be parsable by JavaScript, delta times can be "7 days", etc. |
-| `older` | Mixed | Optionally filter files to those modified before a specified date, or delta time.  Dates should be parsable by JavaScript, delta times can be "7 days", etc. |
-| `larger` | Mixed | Optionally filter files to those larger than a specified size, which can be raw bytes, or a string such as "50K", "500MB", "32GB", "1TB", etc. |
-| `smaller` | Mixed | Optionally filter files to those smaller than a specified size, which can be raw bytes, or a string such as "50K", "500MB", "32GB", "1TB", etc. |
-| `threads` | Integer | Optionally increase concurrency to improve performance.  Defaults to `1` thread. |
 
 ### snapshot
 
