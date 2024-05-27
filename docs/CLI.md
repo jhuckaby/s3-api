@@ -144,12 +144,10 @@ For more details, see the [snapshot](#snapshot) and [backup](#backup) commands.
 s3 help [COMMAND]
 ```
 
-The `help` command prints a quick summary of all commands and their basic usage, or usage for a specific command.  Example:
+The `help` command prints a quick summary of all commands and their basic usage, or details for a specific command.  Example:
 
-```
-$ s3 help put
-
-s3 put s3://my-bucket/users/kermit.json '{"animal":"frog", "color":"green"}'
+```sh
+s3 help put
 ```
 
 ### docs
@@ -158,7 +156,7 @@ s3 put s3://my-bucket/users/kermit.json '{"animal":"frog", "color":"green"}'
 s3 docs
 ```
 
-The `docs` command simply prints the contents of this CLI reference.
+The `docs` command prints the contents of the CLI reference, with markdown conversion to formatted text.
 
 ### put
 
@@ -349,13 +347,13 @@ A typical response looks like this:
 
 ```
 s3 list S3_URL
+s3 ls S3_URL
 ```
 
 The `list` command (alias `ls`) fetches and outputs a listing of remote S3 objects that exist under a specified key prefix, and optionally match a specified filter.  It will automatically loop and paginate as required, returning the full set of matched objects regardless of count.  Example:
 
 ```sh
 s3 list s3://my-bucket/s3dir/
-s3 ls s3://my-bucket/s3dir/
 ```
 
 The `list` command accepts the following optional arguments:
@@ -380,13 +378,13 @@ A few notes:
 
 ```
 s3 listFolders S3_URL
+s3 lf S3_URL
 ```
 
 The `listFolders` command (alias `lf`) fetches and outputs a listing of remote S3 files and "subfolders" that exist under a specified key prefix.  The S3 storage system doesn't *really* have a folder tree, but it fakes one by indexing keys by a delimiter (typically slash).  This method fetches one subfolder level only -- it does not recurse for nested folders.  Example:
 
 ```sh
 s3 listFolders s3://my-bucket/s3dir/
-s3 lf s3://my-bucket/s3dir/
 ```
 
 The `listFolders` command accepts the following optional arguments:
@@ -415,13 +413,13 @@ The items of the `files` array will contain the following properties:
 
 ```
 s3 listBuckets
+s3 lb
 ```
 
 The `listBuckets` command (alias `lb`) fetches the complete list of S3 buckets in your AWS account.  It accepts no options.  Example:
 
 ```sh
 s3 listBuckets
-s3 lb
 ```
 
 Include `--json` to print the results in JSON, rather than an ASCII table.
@@ -430,13 +428,13 @@ Include `--json` to print the results in JSON, rather than an ASCII table.
 
 ```
 s3 copy S3_SRC_URL S3_DEST_URL
+s3 cp S3_SRC_URL S3_DEST_URL
 ```
 
 The `copy` command (alias `cp`) copies one S3 object to another S3 location.  This can copy between buckets as well.  Example:
 
 ```sh
 s3 copy s3://my-bucket/users/oldkermit.json s3://my-bucket/users/newkermit.json
-s3 cp s3://my-bucket/users/oldkermit.json s3://my-bucket/users/newkermit.json
 ```
 
 You can include `--params` here to customize things in the destination like ACL or storage class.  See [S3 Params](#s3-params) for details.
@@ -445,13 +443,13 @@ You can include `--params` here to customize things in the destination like ACL 
 
 ```
 s3 move S3_SRC_URL S3_DEST_URL
+s3 mv S3_SRC_URL S3_DEST_URL
 ```
 
 The `move` command (alias `mv`) moves one S3 object to another S3 location.  Essentially, it performs a [copy](#copy) followed by a [delete](#delete).  This can move between buckets as well.  Example:
 
 ```sh
 s3 move s3://my-bucket/users/oldkermit.json s3://my-bucket/users/newkermit.json
-s3 mv s3://my-bucket/users/oldkermit.json s3://my-bucket/users/newkermit.json
 ```
 
 You can include `--params` here to customize things in the destination like ACL or storage class.  See [S3 Params](#s3-params) for details.
@@ -460,26 +458,26 @@ You can include `--params` here to customize things in the destination like ACL 
 
 ```
 s3 delete S3_URL
+s3 rm S3_URL
 ```
 
 The `delete` command (alias `rm`) deletes a single object from S3 given its key.  Please use caution here, as there is no way to undo a delete (unless you use versioned buckets I suppose).  Example:
 
 ```sh
 s3 delete s3://my-bucket/s3dir/myfile.gif
-s3 rm s3://my-bucket/s3dir/myfile.gif
 ```
 
 ### upload
 
 ```
 s3 upload LOCAL_FILE S3_URL
+s3 up LOCAL_FILE S3_URL
 ```
 
 The `upload` command (alias `up`) uploads a single file from the local filesystem to an object in S3.  This uses streams and multi-part chunks internally, so it can handle files of any size while using very little memory.  Example:
 
 ```sh
 s3 upload /path/to/image.gif s3://my-bucket/s3dir/myfile.gif
-s3 up /path/to/image.gif s3://my-bucket/s3dir/myfile.gif
 ```
 
 Note that you can omit the filename portion of the S3 URL if you want.  Specifically, if the S3 URL ends with a slash (`/`) the library will automatically append the local filename to the end of the S3 key.
