@@ -371,6 +371,47 @@ class S3API {
 	}
 	
 	/**
+	 * Recursively copies multiple files / directories from S3 to S3.
+	 * @param {Object} opts - The options object for the downloadFiles operation.
+	 * @param {string} opts.remotePath - The base S3 path to fetch files from.
+	 * @param {string} opts.destPath - The base S3 path to copy files to.
+	 * @param {RegExp} [opts.filespec] - Optionally filter the S3 files using a regular expression, matched on the filenames.
+	 * @param {Function} [opts.filter] - Optionally provide a filter function to select which files to include.
+	 * @param {number} [opts.threads=1] - Optionally increase the threads to improve performance.
+	 * @param {Object} [opts.sourceBucket] - Optionally override the S3 bucket used to read the source files.
+	 * @param {string} [opts.bucket] - Optionally override the S3 bucket.
+	 * @param {boolean} [opts.dry=false] - Optionally do a dry run (take no action).
+	 * @returns {Promise<ListResponse>} - A promise that resolves to a custom object.
+	 */
+	copyFiles(opts, callback) {
+		// copy multiple files using s3 list
+		// opts: { sourceBucket, remotePath, bucket, destPath, filespec, threads }
+		// result: { files([{ key, size, mtime }, ...]), total_bytes }
+		let self = this;
+		
+		// we want EVERYTHING, including those 0-byte folder markers
+		opts.emptyFolders = true;
+		
+		this.list(opts, function(err, files, bytes) {
+			if (err) return callback(err, null, null);
+			
+			self.logDebug(8, "Copying " + files.length + " files", files);
+			
+			async.eachLimit( files, opts.threads || 1,
+				function(file, callback) {
+					opts.sourceKey = file.key;
+					opts.key = opts.destPath + file.key.slice(self.prefix.length + opts.remotePath.length);
+					self.copy( opts, callback );
+				},
+				function(err) {
+					if (err) return callback(err, null, null);
+					callback(null, files, bytes);
+				}
+			); // eachLimit
+		}); // list
+	}
+	
+	/**
 	 * Move a single object from one location to another.
 	 * @param {Object} opts - The options object for the move operation.
 	 * @param {Object} opts.sourceKey - The S3 key to copy from.
@@ -391,8 +432,49 @@ class S3API {
 			if (err) return callback(err);
 			
 			// now delete the source
-			self.delete({ bucket: opts.sourceBucket || self.bucket, key: opts.sourceKey }, callback);
+			self.delete( Tools.mergeHashes(opts, { bucket: opts.sourceBucket || self.bucket, key: opts.sourceKey }), callback);
 		});
+	}
+	
+	/**
+	 * Recursively copies multiple files / directories from S3 to S3.
+	 * @param {Object} opts - The options object for the downloadFiles operation.
+	 * @param {string} opts.remotePath - The base S3 path to fetch files from.
+	 * @param {string} opts.destPath - The base S3 path to move files to.
+	 * @param {RegExp} [opts.filespec] - Optionally filter the S3 files using a regular expression, matched on the filenames.
+	 * @param {Function} [opts.filter] - Optionally provide a filter function to select which files to include.
+	 * @param {number} [opts.threads=1] - Optionally increase the threads to improve performance.
+	 * @param {Object} [opts.sourceBucket] - Optionally override the S3 bucket used to read the source files.
+	 * @param {string} [opts.bucket] - Optionally override the S3 bucket.
+	 * @param {boolean} [opts.dry=false] - Optionally do a dry run (take no action).
+	 * @returns {Promise<ListResponse>} - A promise that resolves to a custom object.
+	 */
+	moveFiles(opts, callback) {
+		// move multiple files using s3 list
+		// opts: { sourceBucket, remotePath, bucket, destPath, filespec, threads }
+		// result: { files([{ key, size, mtime }, ...]), total_bytes }
+		let self = this;
+		
+		// we want EVERYTHING, including those 0-byte folder markers
+		opts.emptyFolders = true;
+		
+		this.list(opts, function(err, files, bytes) {
+			if (err) return callback(err, null, null);
+			
+			self.logDebug(8, "Moving " + files.length + " files", files);
+			
+			async.eachLimit( files, opts.threads || 1,
+				function(file, callback) {
+					opts.sourceKey = file.key;
+					opts.key = opts.destPath + file.key.slice(self.prefix.length + opts.remotePath.length);
+					self.move( opts, callback );
+				},
+				function(err) {
+					if (err) return callback(err, null, null);
+					callback(null, files, bytes);
+				}
+			); // eachLimit
+		}); // list
 	}
 	
 	/** 
@@ -477,6 +559,7 @@ class S3API {
 	 * @param {RegExp} [opts.filespec] - Optionally filter the result files using a regular expression, matched on the filenames.
 	 * @param {Function} [opts.filter] - Optionally provide a filter function to select which files to include.
 	 * @param {(number|string)} [opts.older] - Optionally filter the S3 files based on their modification date.
+	 * @param {boolean} [opts.emptyFolders=false] - Optionally include 0-byte empty folder markers.
 	 * @param {string} [opts.bucket] - Optionally specify the S3 bucket where the folders reside.
 	 * @returns {Promise<ListResponse>} - A promise that resolves to a custom object.
 	 */
@@ -532,7 +615,7 @@ class S3API {
 							let file = { key: key, size: bytes, mtime: mtime };
 							
 							// skip over 0-byte folder markers
-							if (!bytes && key.match(/\/$/)) return;
+							if (!bytes && key.match(/\/$/) && !opts.emptyFolders) return;
 							
 							// optional filter and filespec
 							if (opts.filter(file) && Path.basename(key).match(opts.filespec)) {
@@ -1238,7 +1321,9 @@ asyncify( S3API, {
 	list: ['files', 'bytes'],
 	walk: [],
 	copy: ['meta'],
+	copyFiles: ['meta'],
 	move: ['meta'],
+	moveFiles: ['meta'],
 	delete: ['meta'],
 	uploadFile: ['meta'],
 	downloadFile: ['meta'],

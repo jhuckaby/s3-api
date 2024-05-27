@@ -78,8 +78,14 @@ const CMD_HELP_TEXT = {
 	// copy: `s3 copy --bucket my-bucket --sourceKey "users/oldkermit.json" --key "users/newkermit.json"`,
 	copy: `s3 copy s3://my-bucket/users/oldkermit.json s3://my-bucket/users/newkermit.json`,
 	
+	// copyFiles: `s3 copyFiles --bucket my-bucket --remotePath users --destPath newusers`,
+	copyFiles: `s3 copyFiles s3://my-bucket/users s3://my-bucket/newusers`,
+	
 	// move: `s3 move --bucket my-bucket --sourceKey "users/oldkermit.json" --key "users/newkermit.json"`,
 	move: `s3 move s3://my-bucket/users/oldkermit.json s3://my-bucket/users/newkermit.json`,
+	
+	// moveFiles: `s3 moveFiles --bucket my-bucket --remotePath users --destPath newusers`,
+	moveFiles: `s3 moveFiles s3://my-bucket/users s3://my-bucket/newusers`,
 	
 	// delete: `s3 delete --bucket my-bucket --key "s3dir/myfile.gif"`,
 	delete: `s3 delete s3://my-bucket/s3dir/myfile.gif`,
@@ -633,6 +639,15 @@ const app = {
 		await this.cmd_copy();
 	},
 	
+	async cmd_copyFiles() {
+		// copy files
+		// s3 copyFiles s3://my-bucket/users s3://my-bucket/newusers
+		this.shiftS3Spec('sourceBucket', 'remotePath') || this.dieUsage(this.cmd);
+		this.shiftS3Spec('bucket', 'destPath') || this.dieUsage(this.cmd);
+		this.addMultiFilter();
+		await this.doS3Cmd(this.cmd);
+	},
+	
 	async cmd_move() {
 		// move file
 		// s3 move s3://my-bucket/users/oldkermit.json s3://my-bucket/users/newkermit.json
@@ -645,6 +660,15 @@ const app = {
 		// alias for move
 		cmd = this.cmd = 'move';
 		await this.cmd_move();
+	},
+	
+	async cmd_moveFiles() {
+		// move files
+		// s3 moveFiles s3://my-bucket/users s3://my-bucket/newusers
+		this.shiftS3Spec('sourceBucket', 'remotePath') || this.dieUsage(this.cmd);
+		this.shiftS3Spec('bucket', 'destPath') || this.dieUsage(this.cmd);
+		this.addMultiFilter();
+		await this.doS3Cmd(this.cmd);
 	},
 	
 	async cmd_delete() {

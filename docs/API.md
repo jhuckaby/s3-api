@@ -441,6 +441,59 @@ The response object will contain the following keys, which you can destruct into
 |---------------|------|-------------|
 | `meta` | Object | A raw metadata object that is sent back from the AWS S3 service.  It contains information about the request, used for debugging and troubleshooting purposes. |
 
+### copyFiles
+
+The `copyFiles()` method recursively copies multiple files / directories from S3 to the another S3 location.  Example:
+
+```js
+try {
+	// copy selected files
+	let { files, bytes } = await s3.copyFiles({ remotePath: 's3dir/uploadedimages', destPath: 's3dir/copyofimages', filespec: /\.gif$/ });
+}
+catch(err) {
+	// handle error here
+}
+```
+
+The method accepts an object containing the following properties:
+
+| Property Name | Type | Description |
+|---------------|------|-------------|
+| `remotePath` | String | **(Required)** The base S3 path to fetch files from.  This may be prepended with a `prefix` if set on the class instance. |
+| `destPath` | String | **(Required)** The base S3 path to copy files to.  This may be prepended with a `prefix` if set on the class instance. |
+| `filespec` | RegExp | Optionally filter the S3 files using a regular expression, matched on the filenames. |
+| `filter` | Function | Optionally provide a function to decide whether or not to include each file.  See below for usage. |
+| `threads` | Integer | Optionally increase the threads to improve performance.  Defaults to `1`. |
+| `sourceBucket` | String | Optionally override the S3 bucket used to read the source files.  This defaults to the class `bucket` parameter. |
+| `bucket` | String | Optionally specify the S3 bucket where the files are copied to.  This is usually set in the class constructor. |
+
+The response object will contain the following keys, which you can destruct into variables as shown above:
+
+| Property Name | Type | Description |
+|---------------|------|-------------|
+| `files` | Array | An array of files that were copied.  Each item in the array is an object with `key`, `size` and `mtime` properties. |
+| `bytes` | Integer | The total number of bytes copied. |
+
+If you specify a `filter` function, it is called for each matching S3 key, and passed an object containing `key`, `size` and `mtime` properties.  Return `true` to copy the file, or `false` to skip it.  Example use:
+
+```js
+try {
+	// copy selected files
+	let { files } = await s3.copyFiles({ 
+		remotePath: 's3dir/uploadedimages', 
+		destPath: 's3dir/copyofimages', 
+		
+		filter: function(file) {
+			// only copy large files 1MB+
+			return file.size > 1024 * 1024;
+		}
+	});
+}
+catch(err) {
+	// handle error here
+}
+```
+
 ### move
 
 The `move()` method moves one S3 object to another location.  Essentially, it performs a [copy()](#copy) followed by a [delete()](#delete).  This can move objects between buckets as well.  Example:
@@ -482,6 +535,59 @@ The response object will contain the following keys, which you can destruct into
 | Property Name | Type | Description |
 |---------------|------|-------------|
 | `meta` | Object | A raw metadata object that is sent back from the AWS S3 service.  It contains information about the request, used for debugging and troubleshooting purposes. |
+
+### moveFiles
+
+The `moveFiles()` method recursively moves multiple files / directories from S3 to the another S3 location.  Example:
+
+```js
+try {
+	// move selected files
+	let { files, bytes } = await s3.moveFiles({ remotePath: 's3dir/uploadedimages', destPath: 's3dir/copyofimages', filespec: /\.gif$/ });
+}
+catch(err) {
+	// handle error here
+}
+```
+
+The method accepts an object containing the following properties:
+
+| Property Name | Type | Description |
+|---------------|------|-------------|
+| `remotePath` | String | **(Required)** The base S3 path to fetch files from.  This may be prepended with a `prefix` if set on the class instance. |
+| `destPath` | String | **(Required)** The base S3 path to move files to.  This may be prepended with a `prefix` if set on the class instance. |
+| `filespec` | RegExp | Optionally filter the S3 files using a regular expression, matched on the filenames. |
+| `filter` | Function | Optionally provide a function to decide whether or not to include each file.  See below for usage. |
+| `threads` | Integer | Optionally increase the threads to improve performance.  Defaults to `1`. |
+| `sourceBucket` | String | Optionally override the S3 bucket used to read the source files.  This defaults to the class `bucket` parameter. |
+| `bucket` | String | Optionally specify the S3 bucket where the files are moved to.  This is usually set in the class constructor. |
+
+The response object will contain the following keys, which you can destruct into variables as shown above:
+
+| Property Name | Type | Description |
+|---------------|------|-------------|
+| `files` | Array | An array of files that were moved.  Each item in the array is an object with `key`, `size` and `mtime` properties. |
+| `bytes` | Integer | The total number of bytes moved. |
+
+If you specify a `filter` function, it is called for each matching S3 key, and passed an object containing `key`, `size` and `mtime` properties.  Return `true` to move the file, or `false` to skip it.  Example use:
+
+```js
+try {
+	// move selected files
+	let { files } = await s3.moveFiles({ 
+		remotePath: 's3dir/uploadedimages', 
+		destPath: 's3dir/copyofimages', 
+		
+		filter: function(file) {
+			// only move large files 1MB+
+			return file.size > 1024 * 1024;
+		}
+	});
+}
+catch(err) {
+	// handle error here
+}
+```
 
 ### delete
 

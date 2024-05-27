@@ -439,6 +439,31 @@ s3 copy s3://my-bucket/users/oldkermit.json s3://my-bucket/users/newkermit.json
 
 You can include `--params` here to customize things in the destination like ACL or storage class.  See [S3 Params](#s3-params) for details.
 
+### copyFiles
+
+```
+s3 copyFiles S3_SRC_URL S3_DEST_URL
+```
+
+The `copyFiles` command recursively copies multiple files / directories from S3 to another S3 location.  Example:
+
+```sh
+s3 copyFiles s3://my-bucket/users s3://my-bucket/newusers
+```
+
+The `copyFiles` command accepts the following optional arguments:
+
+| Property Name | Type | Description |
+|---------------|------|-------------|
+| `filespec` | RegExp | Optionally filter the source S3 filenames using a regular expression (matched only on the filenames). |
+| `include` | RegExp | Optionally restrict files using an inclusion regular expression pattern (matched on the whole file paths). |
+| `exclude` | RegExp | Optionally exclude files using an exclusion regular expression pattern (matched on the whole file paths). |
+| `newer` | Mixed | Optionally filter files to those modified after a specified date, or delta time.  Dates should be parsable by JavaScript, delta times can be "7 days", etc. |
+| `older` | Mixed | Optionally filter files to those modified before a specified date, or delta time.  Dates should be parsable by JavaScript, delta times can be "7 days", etc. |
+| `larger` | Mixed | Optionally filter files to those larger than a specified size, which can be raw bytes, or a string such as "50K", "500MB", "32GB", "1TB", etc. |
+| `smaller` | Mixed | Optionally filter files to those smaller than a specified size, which can be raw bytes, or a string such as "50K", "500MB", "32GB", "1TB", etc. |
+| `threads` | Integer | Optionally increase concurrency to improve performance.  Defaults to `1` thread. |
+
 ### move
 
 ```
@@ -453,6 +478,31 @@ s3 move s3://my-bucket/users/oldkermit.json s3://my-bucket/users/newkermit.json
 ```
 
 You can include `--params` here to customize things in the destination like ACL or storage class.  See [S3 Params](#s3-params) for details.
+
+### moveFiles
+
+```
+s3 moveFiles S3_SRC_URL S3_DEST_URL
+```
+
+The `moveFiles` command recursively moves multiple files / directories from S3 to another S3 location.  Essentially, it performs a [copy](#copy) followed by a [delete](#delete) on each file.  Example:
+
+```sh
+s3 moveFiles s3://my-bucket/users s3://my-bucket/newusers
+```
+
+The `moveFiles` command accepts the following optional arguments:
+
+| Property Name | Type | Description |
+|---------------|------|-------------|
+| `filespec` | RegExp | Optionally filter the source S3 filenames using a regular expression (matched only on the filenames). |
+| `include` | RegExp | Optionally restrict files using an inclusion regular expression pattern (matched on the whole file paths). |
+| `exclude` | RegExp | Optionally exclude files using an exclusion regular expression pattern (matched on the whole file paths). |
+| `newer` | Mixed | Optionally filter files to those modified after a specified date, or delta time.  Dates should be parsable by JavaScript, delta times can be "7 days", etc. |
+| `older` | Mixed | Optionally filter files to those modified before a specified date, or delta time.  Dates should be parsable by JavaScript, delta times can be "7 days", etc. |
+| `larger` | Mixed | Optionally filter files to those larger than a specified size, which can be raw bytes, or a string such as "50K", "500MB", "32GB", "1TB", etc. |
+| `smaller` | Mixed | Optionally filter files to those smaller than a specified size, which can be raw bytes, or a string such as "50K", "500MB", "32GB", "1TB", etc. |
+| `threads` | Integer | Optionally increase concurrency to improve performance.  Defaults to `1` thread. |
 
 ### delete
 
