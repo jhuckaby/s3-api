@@ -624,7 +624,7 @@ The `snapshot` command accepts the following optional arguments:
 | `tarArgs` | String | If your snapshot archive is a `.tar`, `.tar.gz`, `.tar.xz` or `.tar.bz2` file, you can customize the arguments to the `tar` binary, e.g. `" -I 'gzip -9' -cvf"` for max gzip compression. |
 | `tempDir` | String | Optionally customize the temp directory used internally. |
 
-**Note:** The `--expire` option assumes that your snapshots live in their own directory.  It will expire **any files** it finds in the directory that are older than N days.  Please use with extreme caution.
+**Note:** The `--expire` option assumes that your snapshots live in their own directory.  It will expire **all files** it finds in the directory that are older than N days.  Please use with extreme caution.
 
 **Note:** If you use `--zipArgs` or `--tarArgs`, make sure you insert a leading space in the value, inside quotes, e.g. `--zipArgs " -r -9"` or `--tarArgs " -I 'gzip -9' -cvf"`.  This insures that the sub-argument will be parsed properly.
 
@@ -680,7 +680,7 @@ The `backup` command accepts the following optional arguments:
 | `tarArgs` | String | If your backup is a `.tar`, `.tar.gz`, `.tar.xz` or `.tar.bz2` file, you can customize the arguments to the `tar` binary, e.g. `" -I 'gzip -9' -cvf"` for max gzip compression. |
 | `tempDir` | String | Optionally customize the temp directory used internally. |
 
-**Note:** The `--expire` option assumes that your backups live in their own S3 directory.  It will expire **any files** it finds in the S3 directory that are older than N days.  Please use with extreme caution.
+**Note:** The `--expire` option assumes that your backups live in their own S3 directory.  It will expire **all files** it finds in the S3 directory that are older than N days.  Please use with extreme caution.
 
 **Note:** If you use `--zipArgs` or `--tarArgs`, make sure you insert a leading space in the value, inside quotes, e.g. `--zipArgs " -r -9"` or `--tarArgs " -I 'gzip -9' -cvf"`.  This insures that the sub-argument will be parsed properly.
 
