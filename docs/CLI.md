@@ -373,7 +373,7 @@ The `list` command accepts the following optional arguments:
 | `json` | Boolean | Optionally return the results in JSON format, rather than an ASCII table.  Combine with `--quiet` for pure JSON output. |
 | `csv` | Boolean | Optionally return the results in CSV format, rather than an ASCII table.  Combine with `--quiet` for pure CSV output. |
 
-A few notes:
+**Notes:**
 
 - Make sure to include a trailing slash if you intend to look inside an S3 "directory".  The URL is interpreted as a "S3 key prefix" so it can match partial filenames unless delimited.
 - When specifying a `--filespec`, `--include` or `--exclude`, single-quotes are recommended.  This makes it easier to type regular expressions, as you don't need to escape backslashes, e.g. `--filespec '\.gif$'`.
@@ -398,6 +398,10 @@ The `listFolders` command accepts the following optional arguments:
 | `delimiter` | String | Optionally change the folder delimiter.  It defaults to a forward-slash (`/`). |
 | `json` | Boolean | Optionally return the results in JSON format, rather than an ASCII table.  Combine with `--quiet` for pure JSON output. |
 | `csv` | Boolean | Optionally return the results in CSV format, rather than an ASCII table.  Combine with `--quiet` for pure CSV output. |
+
+**Notes:**
+
+- Always include a trailing slash when specifying directories.
 
 ### listBuckets
 
@@ -439,18 +443,20 @@ The `copy` command accepts the following optional arguments:
 | `recursive` (`r`) | Boolean | Switch to recursive mode, i.e. call [copyFiles](#copyfiles) instead. |
 | `params` | Object | Optionally pass custom parameters directly to the AWS API for the destination file.  See [S3 Params](#s3-params). |
 
-Note that the AWS SDK does not preserve metadata, such as ACL and storage class, when copying objects.
+**Notes:** 
+
+- The AWS SDK does not preserve metadata, such as ACL and storage class, when copying objects.
 
 ### copyFiles
 
 ```
-s3 copyFiles S3_SRC_URL S3_DEST_URL [--KEY VALUE...]
+s3 copyFiles S3_SRC_URL/ S3_DEST_URL/ [--KEY VALUE...]
 ```
 
 The `copyFiles` command recursively copies multiple files / directories from S3 to another S3 location.  Example:
 
 ```sh
-s3 copyFiles s3://my-bucket/users s3://my-bucket/newusers
+s3 copyFiles s3://my-bucket/users/ s3://my-bucket/newusers/
 ```
 
 The `copyFiles` command accepts the following optional arguments:
@@ -467,7 +473,10 @@ The `copyFiles` command accepts the following optional arguments:
 | `threads` | Integer | Optionally increase concurrency to improve performance.  Defaults to `1` thread. |
 | `params` | Object | Optionally pass custom parameters directly to the AWS API for the destination files.  See [S3 Params](#s3-params). |
 
-Note that the AWS SDK does not preserve metadata, such as ACL and storage class, when copying objects.
+**Notes:**
+
+- Always include a trailing slash when specifying directories.
+- The AWS SDK does not preserve metadata, such as ACL and storage class, when copying objects.
 
 ### move
 
@@ -489,18 +498,20 @@ The `move` command accepts the following optional arguments:
 | `recursive` (`r`) | Boolean | Switch to recursive mode, i.e. call [moveFiles](#movefiles) instead. |
 | `params` | Object | Optionally pass custom parameters directly to the AWS API for the destination file.  See [S3 Params](#s3-params). |
 
-Note that the AWS SDK does not preserve metadata, such as ACL and storage class, when moving objects.
+**Notes:**
+
+- The AWS SDK does not preserve metadata, such as ACL and storage class, when moving objects.
 
 ### moveFiles
 
 ```
-s3 moveFiles S3_SRC_URL S3_DEST_URL [--KEY VALUE...]
+s3 moveFiles S3_SRC_URL/ S3_DEST_URL/ [--KEY VALUE...]
 ```
 
 The `moveFiles` command recursively moves multiple files / directories from S3 to another S3 location.  Essentially, it performs a [copy](#copy) followed by a [delete](#delete) on each file.  Example:
 
 ```sh
-s3 moveFiles s3://my-bucket/users s3://my-bucket/newusers
+s3 moveFiles s3://my-bucket/users/ s3://my-bucket/newusers/
 ```
 
 The `moveFiles` command accepts the following optional arguments:
@@ -517,7 +528,10 @@ The `moveFiles` command accepts the following optional arguments:
 | `threads` | Integer | Optionally increase concurrency to improve performance.  Defaults to `1` thread. |
 | `params` | Object | Optionally pass custom parameters directly to the AWS API for the destination files.  See [S3 Params](#s3-params). |
 
-Note that the AWS SDK does not preserve metadata, such as ACL and storage class, when moving objects.
+**Notes:**
+
+- Always include a trailing slash when specifying directories.
+- The AWS SDK does not preserve metadata, such as ACL and storage class, when moving objects.
 
 ### delete
 
@@ -541,13 +555,13 @@ The `delete` command accepts the following optional arguments:
 ### deleteFiles
 
 ```
-s3 deleteFiles S3_URL [--KEY VALUE...]
+s3 deleteFiles S3_URL/ [--KEY VALUE...]
 ```
 
 The `deleteFiles` command recursively deletes multiple files / directories from S3.  Please use extreme caution here, as there is no way to undo deletes (unless you use versioned buckets I suppose).  Example:
 
 ```sh
-s3 deleteFiles s3://my-bucket/s3dir/uploaded
+s3 deleteFiles s3://my-bucket/s3dir/uploaded/
 ```
 
 The `deleteFiles` command accepts the following optional arguments:
@@ -562,6 +576,10 @@ The `deleteFiles` command accepts the following optional arguments:
 | `larger` | Mixed | Optionally filter files to those larger than a specified size, which can be raw bytes, or a string such as "50K", "500MB", "32GB", "1TB", etc. |
 | `smaller` | Mixed | Optionally filter files to those smaller than a specified size, which can be raw bytes, or a string such as "50K", "500MB", "32GB", "1TB", etc. |
 | `threads` | Integer | Optionally increase concurrency to improve performance.  Defaults to `1` thread. |
+
+**Notes:**
+
+- Always include a trailing slash when specifying directories.
 
 ### upload
 
@@ -590,13 +608,13 @@ The `upload` command accepts the following optional arguments:
 ### uploadFiles
 
 ```
-s3 uploadFiles LOCAL_DIR S3_URL [--KEY VALUE...]
+s3 uploadFiles LOCAL_DIR/ S3_URL/ [--KEY VALUE...]
 ```
 
 The `uploadFiles` command recursively uploads multiple files / directories from the local filesystem to S3.  This uses streams and multi-part uploads internally, so it can handle files of any size while using very little memory.  Example:
 
 ```sh
-s3 uploadFiles /path/to/images s3://my-bucket/s3dir/uploaded
+s3 uploadFiles /path/to/images/ s3://my-bucket/s3dir/uploaded/
 ```
 
 The `uploadFiles` command accepts the following optional arguments:
@@ -616,6 +634,10 @@ The `uploadFiles` command accepts the following optional arguments:
 | `gzip` | Object | Control the gzip compression settings.  See [Compression](#compression). |
 | `suffix` | String | Optionally append a suffix to every destination S3 key, e.g. `.gz` for compressed files. |
 | `params` | Object | Optionally specify parameters to the S3 API, for e.g. ACL and Storage Class.  See [S3 Params](#s3-params). |
+
+**Notes:**
+
+- Always include a trailing slash when specifying directories.
 
 ### download
 
@@ -642,13 +664,13 @@ The `download` command accepts the following optional arguments:
 ### downloadFiles
 
 ```
-s3 downloadFiles S3_URL LOCAL_DIR [--KEY VALUE...]
+s3 downloadFiles S3_URL/ LOCAL_DIR/ [--KEY VALUE...]
 ```
 
 The `downloadFiles` command recursively downloads multiple files / directories from S3 to the local filesystem.  Local parent directories will be automatically created if needed.  This uses streams internally, so it can handle files of any size while using very little memory.  Example:
 
 ```sh
-s3 downloadFiles s3://my-bucket/s3dir/uploaded /path/to/images
+s3 downloadFiles s3://my-bucket/s3dir/uploaded/ /path/to/images/
 ```
 
 The `downloadFiles` command accepts the following optional arguments:
@@ -666,17 +688,21 @@ The `downloadFiles` command accepts the following optional arguments:
 | `decompress` | Boolean | Automatically decompress all files using gunzip during upload.  Disabled by default. |
 | `strip` | RegExp | Optionally strip a suffix from every destination filename, e.g. `\.gz$` to strip the `.gz` suffix off of compressed files. |
 
+**Notes:**
+
+- Always include a trailing slash when specifying directories.
+
 ### snapshot
 
 ```
-s3 snapshot S3_URL LOCAL_FILE [--KEY VALUE...]
-s3 snap S3_URL LOCAL_FILE [--KEY VALUE...]
+s3 snapshot S3_URL/ LOCAL_FILE [--KEY VALUE...]
+s3 snap S3_URL/ LOCAL_FILE [--KEY VALUE...]
 ```
 
 The `snapshot` command (alias `snap`) takes a "snapshot" of an S3 location, including all nested files and directories, and produces a local `.zip`, `.tar`, `.tar.gz`, `.tar.xz` or `.tar.bz2` archive file.  This snapshot file can then be restored back to S3 using the [restoreSnapshot](#restoresnapshot) command.  Example use:
 
 ```sh
-s3 snapshot s3://my-bucket/s3dir/images /path/to/snapshot-[yyyy]-[mm]-[dd].zip
+s3 snapshot s3://my-bucket/s3dir/images/ /path/to/snapshot-[yyyy]-[mm]-[dd].zip
 ```
 
 You can use date/time placeholders in the destination filename, to embed a custom timestamp.  The placeholder format is `[yyyy]`, `[mm]`, `[dd]`, etc.  See [getDateArgs()](https://github.com/jhuckaby/pixl-tools?tab=readme-ov-file#getdateargs) for a list of all possible macros you can specify here.
@@ -698,21 +724,23 @@ The `snapshot` command accepts the following optional arguments:
 | `tarArgs` | String | If your snapshot archive is a `.tar`, `.tar.gz`, `.tar.xz` or `.tar.bz2` file, you can customize the arguments to the `tar` binary, e.g. `" -I 'gzip -9' -cvf"` for max gzip compression. |
 | `tempDir` | String | Optionally customize the temp directory used internally. |
 
-**Note:** The `--expire` option assumes that your snapshots live in their own directory.  It will expire **all files** it finds in the directory that are older than N days.  Please use with extreme caution.
+**Notes:**
 
-**Note:** If you use `--zipArgs` or `--tarArgs`, make sure you insert a leading space in the value, inside quotes, e.g. `--zipArgs " -r -9"` or `--tarArgs " -I 'gzip -9' -cvf"`.  This insures that the sub-argument will be parsed properly.
+- Always include a trailing slash when specifying directories.
+- The `--expire` option assumes that your snapshots live in their own directory.  It will expire **all files** it finds in the directory that are older than N days.  Please use with extreme caution.
+- If you use `--zipArgs` or `--tarArgs`, make sure you insert a leading space in the value, inside quotes, e.g. `--zipArgs " -r -9"` or `--tarArgs " -I 'gzip -9' -cvf"`.  This insures that the sub-argument will be parsed properly.
 
 ### restoreSnapshot
 
 ```
-s3 restoreSnapshot LOCAL_FILE S3_URL [--KEY VALUE...]
-s3 rs LOCAL_FILE S3_URL [--KEY VALUE...]
+s3 restoreSnapshot LOCAL_FILE S3_URL/ [--KEY VALUE...]
+s3 rs LOCAL_FILE S3_URL/ [--KEY VALUE...]
 ```
 
 The `restoreSnapshot` command (alias `rs`) restores a previously created snapshot back to S3, using a local archive file as a source.  The archive should have been previously created via the [snapshot](#snapshot) command.  Example use:
 
 ```sh
-s3 restoreSnapshot /path/to/snapshot-2024-05-22.zip s3://my-bucket/s3dir/images
+s3 restoreSnapshot /path/to/snapshot-2024-05-22.zip s3://my-bucket/s3dir/images/
 ```
 
 The `restoreSnapshot` command accepts the following optional arguments:
@@ -730,19 +758,22 @@ The `restoreSnapshot` command accepts the following optional arguments:
 | `delete` | Boolean | Optionally **delete** the entire S3 location before restoring.  **Use with caution**.  This does honor the filtering criteria. |
 | `tempDir` | String | Optionally customize the temp directory used internally. |
 
-Please note that as of this writing, the S3 API cannot set modification dates upon upload, so restoring a snapshot "resets" all the S3 record modification dates to the current date/time.  Also, snapshots do not (currently) preserve metadata or other params on the files.
+**Notes:**
+
+- Always include a trailing slash when specifying directories.
+- As of this writing, the S3 API cannot set modification dates upon upload, so restoring a snapshot "resets" all the S3 record modification dates to the current date/time.  Also, snapshots do not (currently) preserve metadata or other params on the files.
 
 ### backup
 
 ```
-s3 backup LOCAL_DIR S3_URL [--KEY VALUE...]
-s3 bk LOCAL_DIR S3_URL [--KEY VALUE...]
+s3 backup LOCAL_DIR/ S3_URL [--KEY VALUE...]
+s3 bk LOCAL_DIR/ S3_URL [--KEY VALUE...]
 ```
 
 The `backup` command (alias `bk`) makes a backup of a local filesystem directory, and uploads an archive to S3 for safekeeping.  The archive file can be in `.zip`, `.tar`, `.tar.gz`, `.tar.xz` or `.tar.bz2` format.  Example:
 
 ```sh
-s3 backup /path/to/files s3://my-bucket/backups/mybackup-[yyyy]-[mm]-[dd].zip
+s3 backup /path/to/files/ s3://my-bucket/backups/mybackup-[yyyy]-[mm]-[dd].zip
 ```
 
 You can use date/time placeholders in the destination S3 URL, to embed a custom timestamp.  The placeholder format is `[yyyy]`, `[mm]`, `[dd]`, etc.  See [getDateArgs()](https://github.com/jhuckaby/pixl-tools?tab=readme-ov-file#getdateargs) for a list of all possible macros you can specify here.
@@ -756,21 +787,23 @@ The `backup` command accepts the following optional arguments:
 | `tarArgs` | String | If your backup is a `.tar`, `.tar.gz`, `.tar.xz` or `.tar.bz2` file, you can customize the arguments to the `tar` binary, e.g. `" -I 'gzip -9' -cvf"` for max gzip compression. |
 | `tempDir` | String | Optionally customize the temp directory used internally. |
 
-**Note:** The `--expire` option assumes that your backups live in their own S3 directory.  It will expire **all files** it finds in the S3 directory that are older than N days.  Please use with extreme caution.
+**Notes:**
 
-**Note:** If you use `--zipArgs` or `--tarArgs`, make sure you insert a leading space in the value, inside quotes, e.g. `--zipArgs " -r -9"` or `--tarArgs " -I 'gzip -9' -cvf"`.  This insures that the sub-argument will be parsed properly.
+- Always include a trailing slash when specifying directories.
+- The `--expire` option assumes that your backups live in their own S3 directory.  It will expire **all files** it finds in the S3 directory that are older than N days.  Please use with extreme caution.
+- If you use `--zipArgs` or `--tarArgs`, make sure you insert a leading space in the value, inside quotes, e.g. `--zipArgs " -r -9"` or `--tarArgs " -I 'gzip -9' -cvf"`.  This insures that the sub-argument will be parsed properly.
 
 ### restoreBackup
 
 ```
-s3 restoreBackup S3_URL LOCAL_DIR [--KEY VALUE...]
-s3 rb S3_URL LOCAL_DIR [--KEY VALUE...]
+s3 restoreBackup S3_URL LOCAL_DIR/ [--KEY VALUE...]
+s3 rb S3_URL LOCAL_DIR/ [--KEY VALUE...]
 ```
 
 The `restoreBackup` command (alias `rb`) restores a backup previously created via the [backup](#backup) command.  This downloads the backup archive from S3 and expands it back onto the filesystem.  Example use:
 
 ```sh
-s3 restoreBackup s3://my-bucket/backups/mybackup-2024-05-22.zip /path/to/files
+s3 restoreBackup s3://my-bucket/backups/mybackup-2024-05-22.zip /path/to/files/
 ```
 
 The `restoreBackup` command accepts the following optional arguments:
@@ -779,3 +812,7 @@ The `restoreBackup` command accepts the following optional arguments:
 |---------------|------|-------------|
 | `delete` | Boolean | Optionally **delete** the entire local directory before restoring.  **Use with caution**. |
 | `tempDir` | String | Optionally customize the temp directory used internally. |
+
+**Notes:**
+
+- Always include a trailing slash when specifying directories.

@@ -206,25 +206,25 @@ You can upload or download multiple files in one call, including entire director
 ```js
 try {
 	// upload directory
-	await s3.uploadFiles({ localPath: '/path/to/images', remotePath: 's3dir/uploadedimages' });
+	await s3.uploadFiles({ localPath: '/path/to/images/', remotePath: 's3dir/uploadedimages/' });
 	
 	// download directory
-	await s3.downloadFiles({ remotePath: 's3dir/uploadedimages', localPath: '/path/to/images' });
+	await s3.downloadFiles({ remotePath: 's3dir/uploadedimages/', localPath: '/path/to/images/' });
 }
 catch(err) {
 	// handle error here
 }
 ```
 
-This would upload the entire contents of the local `/path/to/images` directory, and place the contents into the S3 key `s3dir/uploadedimages` (i.e. using it as a prefix).  Nested directories are automatically traversed as well.  To control which files are uploaded or downloaded, use the `filespec` property:
+This would upload the entire contents of the local `/path/to/images/` directory, and place the contents into the S3 key `s3dir/uploadedimages/` (i.e. using it as a prefix).  Nested directories are automatically traversed as well.  To control which files are uploaded or downloaded, use the `filespec` property:
 
 ```js
 try {
 	// upload selected files
-	await s3.uploadFiles({ localPath: '/path/to/images', remotePath: 's3dir/uploadedimages', filespec: /\.gif$/ });
+	await s3.uploadFiles({ localPath: '/path/to/images/', remotePath: 's3dir/uploadedimages/', filespec: /\.gif$/ });
 	
 	// download selected files
-	await s3.downloadFiles({ remotePath: 's3dir/uploadedimages', localPath: '/path/to/images', filespec: /\.gif$/ });
+	await s3.downloadFiles({ remotePath: 's3dir/uploadedimages/', localPath: '/path/to/images/', filespec: /\.gif$/ });
 }
 catch(err) {
 	// handle error here
@@ -270,7 +270,7 @@ When compressing multiple files for upload, you can specify an S3 key `suffix` (
 ```js
 try {
 	// upload directory w/compression and suffix
-	await s3.uploadFiles({ localPath: '/path/to/images', remotePath: 's3dir/uploadedimages', compress: true, suffix: '.gz' });
+	await s3.uploadFiles({ localPath: '/path/to/images/', remotePath: 's3dir/uploadedimages/', compress: true, suffix: '.gz' });
 }
 catch(err) {
 	// handle error here
@@ -282,7 +282,7 @@ And similarly, when downloading with decompression you can use `strip` to strip 
 ```js
 try {
 	// download directory w/decompression and strip
-	await s3.downloadFiles({ remotePath: 's3dir/uploadedimages', localPath: '/path/to/images', decompress: true, strip: /\.gz$/ });
+	await s3.downloadFiles({ remotePath: 's3dir/uploadedimages/', localPath: '/path/to/images/', decompress: true, strip: /\.gz$/ });
 }
 catch(err) {
 	// handle error here
@@ -296,10 +296,10 @@ When uploading, downloading or deleting multiple files, you can specify a number
 ```js
 try {
 	// upload directory
-	await s3.uploadFiles({ localPath: '/path/to/images', remotePath: 's3dir/uploadedimages', threads: 4 });
+	await s3.uploadFiles({ localPath: '/path/to/images/', remotePath: 's3dir/uploadedimages/', threads: 4 });
 	
 	// download directory
-	await s3.downloadFiles({ remotePath: 's3dir/uploadedimages', localPath: '/path/to/images', threads: 4 });
+	await s3.downloadFiles({ remotePath: 's3dir/uploadedimages/', localPath: '/path/to/images/', threads: 4 });
 }
 catch(err) {
 	// handle error here
@@ -332,7 +332,7 @@ To generate a listing of remote objects on S3 under a specific key prefix, use t
 ```js
 try {
 	// list remote objects
-	let { files, bytes } = await s3.list({ remotePath: 's3dir' });
+	let { files, bytes } = await s3.list({ remotePath: 's3dir/' });
 	console.log(files);
 }
 catch (err) {
@@ -349,7 +349,7 @@ To limit which objects are included in the listing, you can specify a `filespec`
 ```js
 try {
 	// list remote gif files
-	let { files, bytes } = await s3.list({ remotePath: 's3dir', filespec: /\.gif$/ });
+	let { files, bytes } = await s3.list({ remotePath: 's3dir/', filespec: /\.gif$/ });
 	console.log(files);
 }
 catch (err) {
@@ -364,7 +364,10 @@ For even finer grain control over which files are returned, you can specify a `f
 ```js
 try {
 	// list files larger than 1 MB
-	let { files, bytes } = await s3.list({ remotePath: 's3dir', filter: function(file) { return file.size > 1048576; } });
+	let { files, bytes } = await s3.list({ 
+		remotePath: 's3dir/', 
+		filter: function(file) { return file.size > 1048576; } 
+	});
 	console.log(files);
 }
 catch (err) {
@@ -391,7 +394,7 @@ To delete *multiple* objects in one call, use the [deleteFiles()](https://github
 ```js
 try {
 	// delete remote gif files
-	await s3.deleteFiles({ remotePath: 's3dir', filespec: /\.gif$/ });
+	await s3.deleteFiles({ remotePath: 's3dir/', filespec: /\.gif$/ });
 }
 catch (err) {
 	// handle error here
@@ -669,33 +672,33 @@ You can also upload and download multiple files and entire directories using [up
 
 ```sh
 # Upload entire folder
-s3 uploadFiles /path/to/images s3://my-bucket/s3dir/uploaded
+s3 uploadFiles /path/to/images/ s3://my-bucket/s3dir/uploaded/
 
 # Download entire folder
-s3 downloadFiles s3://my-bucket/s3dir/uploaded /path/to/images
+s3 downloadFiles s3://my-bucket/s3dir/uploaded/ /path/to/images/
 ```
 
 These commands provide several ways of filtering files and paths to exclude files, or only include certain files.  Example:
 
 ```sh
 # Only upload GIF images
-s3 uploadFiles /path/to/images s3://my-bucket/s3dir/uploaded --filespec '\.gif$'
+s3 uploadFiles /path/to/images/ s3://my-bucket/s3dir/uploaded/ --filespec '\.gif$'
 
 # Only download files over than 1 week
-s3 downloadFiles s3://my-bucket/s3dir/uploaded /path/to/images --older "1 week"
+s3 downloadFiles s3://my-bucket/s3dir/uploaded/ /path/to/images/ --older "1 week"
 
 # Only upload files larger than 2MB
-s3 uploadFiles /path/to/images s3://my-bucket/s3dir/uploaded --larger "2 MB"
+s3 uploadFiles /path/to/images/ s3://my-bucket/s3dir/uploaded/ --larger "2 MB"
 ```
 
 These commands all support optional upload compression, and/or download decompression, so you can store `.gz` compressed files in S3, and decompress them on download.  Examples:
 
 ```sh
 # Upload a bunch of files and compress with gzip (and add ".gz" suffix to all S3 files)
-s3 uploadFiles /path/to/files s3://my-bucket/s3dir/uploaded --compress --suffix ".gz"
+s3 uploadFiles /path/to/files/ s3://my-bucket/s3dir/uploaded/ --compress --suffix ".gz"
 
 # Download a bunch of gzip files and decompress (and strip off ".gz" suffix)
-s3 downloadFiles s3://my-bucket/s3dir/uploaded /path/to/files --decompress --strip '\.gz$'
+s3 downloadFiles s3://my-bucket/s3dir/uploaded/ /path/to/files/ --decompress --strip '\.gz$'
 ```
 
 You can also copy & move files around (even across buckets) using [copy](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#copy) and [move](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#move):
@@ -708,6 +711,16 @@ s3 copy s3://my-bucket/users/oldkermit.json s3://my-bucket/users/newkermit.json
 s3 move s3://my-bucket/users/oldkermit.json s3://my-bucket/users/newkermit.json
 ```
 
+And to copy or move multiple files, use [copyFiles](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#copyfiles) or [moveFiles](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#movefiles) respectively:
+
+```sh
+# Copy entire folder
+s3 copyFiles s3://my-bucket/users/ s3://my-bucket/newusers/
+
+# Move entire folder
+s3 moveFiles s3://my-bucket/users/ s3://my-bucket/newusers/
+```
+
 You can delete single S3 files and entire folder trees using the [delete](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#delete) and [deleteFiles](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#deletefiles) commands:
 
 ```sh
@@ -715,14 +728,14 @@ You can delete single S3 files and entire folder trees using the [delete](https:
 s3 delete s3://my-bucket/users/newkermit.json
 
 # Delete entire folder
-s3 deleteFiles s3://my-bucket/s3dir/uploaded
+s3 deleteFiles s3://my-bucket/s3dir/uploaded/
 ```
 
 The `deleteFiles` command also accepts all the filtering options that `uploadFiles` and `downloadFiles` use.  Example:
 
 ```sh
 # Delete selected files
-s3 deleteFiles s3://my-bucket/s3dir/uploaded --filespec '\.gif$' --older "15 days"
+s3 deleteFiles s3://my-bucket/s3dir/uploaded/ --filespec '\.gif$' --older "15 days"
 ```
 
 To check if a file exists and view its metadata, use the [head](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#head) command:
@@ -791,7 +804,7 @@ Using dot.path.notation you can add, replace and delete keys, access nested keys
 The [backup](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#backup) command makes a point-in-time backup of a local directory, compresses it using `.zip`, `.tar`, `.tar.gz`, `.tar.xz` or `.tar.bz2`, and uploads the archive to S3.  Example:
 
 ```sh
-s3 backup /path/to/files s3://my-bucket/backups/mybackup-[yyyy]-[mm]-[dd].zip
+s3 backup /path/to/files/ s3://my-bucket/backups/mybackup-[yyyy]-[mm]-[dd].zip
 ```
 
 You can use date/time placeholders in the destination S3 key, to embed a custom timestamp.
@@ -801,13 +814,13 @@ If you make backups on a schedule, and only want to keep a certain amount in S3,
 You can also restore backups using the [restoreBackup](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#restoreBackup) command.  This reverses the process, downloads a backup archive from S3, and decompresses it back onto the filesystem.  Example:
 
 ```sh
-s3 restoreBackup s3://my-bucket/backups/mybackup-2024-05-22.zip /path/to/files
+s3 restoreBackup s3://my-bucket/backups/mybackup-2024-05-22.zip /path/to/files/
 ```
 
 You can also optionally "pre-delete" the local directory to ensure an exact restoration.  To do this, add a `--delete` argument to the command.  Example:
 
 ```sh
-s3 restoreBackup s3://my-bucket/backups/mybackup-2024-05-22.zip /path/to/files --delete
+s3 restoreBackup s3://my-bucket/backups/mybackup-2024-05-22.zip /path/to/files/ --delete
 ```
 
 ### Snapshots
@@ -815,23 +828,23 @@ s3 restoreBackup s3://my-bucket/backups/mybackup-2024-05-22.zip /path/to/files -
 A "snapshot" works in the opposite direction of a backup.  A snapshot is a effectively a point-in-time backup of an S3 location, including all nested files and directories.  The [snapshot](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#snapshot) command downloads all S3 files and writes a local `.zip`, `.tar`, `.tar.gz`, `.tar.xz` or `.tar.bz2` archive file.  Example:
 
 ```sh
-s3 snapshot s3://my-bucket/s3dir/images /path/to/snapshot-[yyyy]-[mm]-[dd].zip
+s3 snapshot s3://my-bucket/s3dir/images/ /path/to/snapshot-[yyyy]-[mm]-[dd].zip
 ```
 
-This would download and compress the entire `s3://my-bucket/s3dir/images` location and everything under it, and write it to `/path/to/snapshot-[yyyy]-[mm]-[dd].zip` on local disk.  You can use date/time placeholders in the destination filename, to embed a custom timestamp.
+This would download and compress the entire `s3://my-bucket/s3dir/images/` location and everything under it, and write it to `/path/to/snapshot-[yyyy]-[mm]-[dd].zip` on local disk.  You can use date/time placeholders in the destination filename, to embed a custom timestamp.
 
 If you take snapshots on a schedule, and only want to keep a certain amount on disk, add an `--expire` argument with a relative time (e.g. `30 days`) and the `snapshot` command will automatically delete snapshots that fall outside the specified date range.
 
 To restore a snapshot back to S3, use the [restoreSnapshot](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#restoresnapshot) command.  This decompresses a snapshot archive and re-uploads all files back to their original location (or a custom location).  Example:
 
 ```sh
-s3 restoreSnapshot /path/to/snapshot-2024-05-22.zip s3://my-bucket/s3dir/images
+s3 restoreSnapshot /path/to/snapshot-2024-05-22.zip s3://my-bucket/s3dir/images/
 ```
 
 You can also optionally "pre-delete" the target S3 location to ensure an exact restoration.  To do this, add a `--delete` argument to the command.  Example:
 
 ```sh
-s3 restoreSnapshot /path/to/snapshot-2024-05-22.zip s3://my-bucket/s3dir/images --delete
+s3 restoreSnapshot /path/to/snapshot-2024-05-22.zip s3://my-bucket/s3dir/images/ --delete
 ```
 
 ### Config File

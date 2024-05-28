@@ -92,7 +92,10 @@ The `put()` method stores an object as a JSON-serialized record in S3, treating 
 ```js
 try {
 	// store a record
-	let { meta } = await s3.put({ key: 'users/kermit.json', value: { animal: 'frog', color: 'green' } });
+	let { meta } = await s3.put({ 
+		key: 'users/kermit.json', 
+		value: { animal: 'frog', color: 'green' } 
+	});
 }
 catch(err) {
 	// handle error here
@@ -122,7 +125,10 @@ The `update()` method updates a JSON-serialized record in S3, by selectively set
 ```js
 try {
 	// update a record
-	let { data } = await s3.update({ key: 'users/kermit.json', updates: { animal: 'toad', color: undefined, newkey: 'newvalue' } });
+	let { data } = await s3.update({ 
+		key: 'users/kermit.json', 
+		updates: { animal: 'toad', color: undefined, newkey: 'newvalue' } 
+	});
 	console.log(data); // { "animal": "frog", "newkey": "newvalue" }
 }
 catch(err) {
@@ -225,7 +231,9 @@ The response object will contain the following keys, which you can destruct into
 | `data` | Object | The content of the JSON record, parsed and in object format. |
 | `meta` | Object | A raw metadata object that is sent back from the AWS S3 service.  It contains information about the request, used for debugging and troubleshooting purposes. |
 
-**Note:** When [Caching](https://github.com/jhuckaby/s3-api/blob/main/README.md#caching) is enabled and an object is fetched from the cache, the `meta` response object will simply contain a single `cached` property, set to `true`.
+**Notes:** 
+
+- When [Caching](https://github.com/jhuckaby/s3-api/blob/main/README.md#caching) is enabled and an object is fetched from the cache, the `meta` response object will simply contain a single `cached` property, set to `true`.
 
 ### head
 
@@ -263,7 +271,9 @@ In this case the `meta` object is augmented with the record's size (`size`) and 
 | `meta.size` | Integer | The object's size in bytes. |
 | `meta.mtime` | Integer | The object's modification date in Epoch seconds. |
 
-**Note:** The `head()` method bypasses the [Cache](https://github.com/jhuckaby/s3-api/blob/main/README.md#caching).  It always hits S3.
+**Notes:** 
+
+- The `head()` method bypasses the [Cache](https://github.com/jhuckaby/s3-api/blob/main/README.md#caching).  It always hits S3.
 
 ### list
 
@@ -272,7 +282,10 @@ The `list()` method fetches a listing of remote S3 objects that exist under a sp
 ```js
 try {
 	// list remote gif files
-	let { files, bytes } = await s3.list({ remotePath: 's3dir', filespec: /\.gif$/ });
+	let { files, bytes } = await s3.list({ 
+		remotePath: 's3dir/', 
+		filespec: /\.gif$/ 
+	});
 	console.log(files);
 }
 catch (err) {
@@ -305,6 +318,10 @@ The items of the `files` array will contain the following properties:
 | `size` | Integer | The objects's size in bytes. |
 | `mtime` | Integer | The object's modification date, as Epoch seconds. |
 
+**Notes:** 
+
+- Always include a trailing slash when specifying directories.
+
 ### listFolders
 
 The `listFolders()` method fetches a listing of remote S3 files and "subfolders" that exist under a specified key prefix.  The S3 storage system doesn't *really* have a folder tree, but it fakes one by indexing keys by a delimiter (typically slash).  This method fetches one subfolder level only -- it does not recurse for nested folders.  Example:
@@ -312,7 +329,7 @@ The `listFolders()` method fetches a listing of remote S3 files and "subfolders"
 ```js
 try {
 	// list remote folders and files
-	let { folders, files } = await s3.listFolders({ remotePath: 's3dir' });
+	let { folders, files } = await s3.listFolders({ remotePath: 's3dir/' });
 	console.log(folders, files);
 }
 catch (err) {
@@ -345,6 +362,10 @@ The items of the `files` array will contain the following properties:
 | `size` | Integer | The objects's size in bytes. |
 | `mtime` | Integer | The object's modification date, as Epoch seconds. |
 
+**Notes:** 
+
+- Always include a trailing slash when specifying directories.
+
 ### listBuckets
 
 The `listBuckets()` method fetches the complete list of S3 buckets in your AWS account.  It accepts no options.  Example:
@@ -374,7 +395,12 @@ The `walk()` method fires an interator for every remote S3 object that exists un
 try {
 	// find remote gif files
 	let files = [];
-	await s3.walk({ remotePath: 's3dir', iterator: function(file) { files.push(file); } });
+	
+	await s3.walk({ 
+		remotePath: 's3dir/', 
+		iterator: function(file) { files.push(file); } 
+	});
+	
 	console.log(files);
 }
 catch (err) {
@@ -401,6 +427,10 @@ Each item object passed to the iterator will contain the following properties:
 | `size` | Integer | The objects's size in bytes. |
 | `mtime` | Integer | The object's modification date, as Epoch seconds. |
 
+**Notes:** 
+
+- Always include a trailing slash when specifying directories.
+
 ### copy
 
 The `copy()` method copies one S3 object to another S3 location.  This API can copy between buckets as well.  Example:
@@ -408,7 +438,10 @@ The `copy()` method copies one S3 object to another S3 location.  This API can c
 ```js
 try {
 	// copy an object
-	let { meta } = await s3.copy({ sourceKey: 'users/oldkermit.json', key: 'users/newkermit.json' });
+	let { meta } = await s3.copy({ 
+		sourceKey: 'users/oldkermit.json', 
+		key: 'users/newkermit.json' 
+	});
 }
 catch(err) {
 	// handle error here
@@ -420,7 +453,12 @@ To copy an object between buckets, include a `sourceBucket` property.  The desti
 ```js
 try {
 	// copy an object between buckets
-	let { meta } = await s3.copy({ sourceBucket: 'oldbucket', sourceKey: 'users/oldkermit.json', bucket: 'newbucket', key: 'users/newkermit.json' });
+	let { meta } = await s3.copy({ 
+		sourceBucket: 'oldbucket', 
+		sourceKey: 'users/oldkermit.json', 
+		bucket: 'newbucket', 
+		key: 'users/newkermit.json' 
+	});
 }
 catch(err) {
 	// handle error here
@@ -443,7 +481,9 @@ The response object will contain the following keys, which you can destruct into
 |---------------|------|-------------|
 | `meta` | Object | A raw metadata object that is sent back from the AWS S3 service.  It contains information about the request, used for debugging and troubleshooting purposes. |
 
-Note that the AWS SDK does not preserve metadata, such as ACL and storage class, when copying objects.
+**Notes:** 
+
+- The AWS SDK does not preserve metadata, such as ACL and storage class, when copying objects.
 
 ### copyFiles
 
@@ -452,7 +492,11 @@ The `copyFiles()` method recursively copies multiple files / directories from S3
 ```js
 try {
 	// copy selected files
-	let { files, bytes } = await s3.copyFiles({ remotePath: 's3dir/uploadedimages', destPath: 's3dir/copyofimages', filespec: /\.gif$/ });
+	let { files, bytes } = await s3.copyFiles({ 
+		remotePath: 's3dir/uploadedimages/', 
+		destPath: 's3dir/copyofimages/', 
+		filespec: /\.gif$/ 
+	});
 }
 catch(err) {
 	// handle error here
@@ -486,8 +530,8 @@ If you specify a `filter` function, it is called for each matching S3 key, and p
 try {
 	// copy selected files
 	let { files } = await s3.copyFiles({ 
-		remotePath: 's3dir/uploadedimages', 
-		destPath: 's3dir/copyofimages', 
+		remotePath: 's3dir/uploadedimages/', 
+		destPath: 's3dir/copyofimages/', 
 		
 		filter: function(file) {
 			// only copy large files 1MB+
@@ -506,8 +550,8 @@ If you specify a `progress` function, it will be called periodically with an obj
 try {
 	// copy selected files
 	let { files } = await s3.copyFiles({ 
-		remotePath: 's3dir/uploadedimages', 
-		destPath: 's3dir/copyofimages', 
+		remotePath: 's3dir/uploadedimages/', 
+		destPath: 's3dir/copyofimages/', 
 		
 		progress: function(progress) {
 			console.log( `Copied ${progress.loaded} of ${progress.total} bytes.` );
@@ -519,7 +563,10 @@ catch(err) {
 }
 ```
 
-Note that the AWS SDK does not preserve metadata, such as ACL and storage class, when copying objects.
+**Notes:**
+
+- Always include a trailing slash when specifying directories.
+- The AWS SDK does not preserve metadata, such as ACL and storage class, when copying objects.
 
 ### move
 
@@ -528,7 +575,10 @@ The `move()` method moves one S3 object to another S3 location.  Essentially, it
 ```js
 try {
 	// move an object
-	let { meta } = await s3.move({ sourceKey: 'users/oldkermit', key: 'users/newkermit' });
+	let { meta } = await s3.move({ 
+		sourceKey: 'users/oldkermit', 
+		key: 'users/newkermit' 
+	});
 }
 catch(err) {
 	// handle error here
@@ -540,7 +590,12 @@ To move an object between buckets, use `sourceBucket`.  The destination bucket i
 ```js
 try {
 	// move an object between buckets
-	let { meta } = await s3.move({ sourceBucket: 'oldbucket', sourceKey: 'users/oldkermit', bucket: 'newbucket', key: 'users/newkermit' });
+	let { meta } = await s3.move({ 
+		sourceBucket: 'oldbucket', 
+		sourceKey: 'users/oldkermit', 
+		bucket: 'newbucket', 
+		key: 'users/newkermit' 
+	});
 }
 catch(err) {
 	// handle error here
@@ -563,7 +618,9 @@ The response object will contain the following keys, which you can destruct into
 |---------------|------|-------------|
 | `meta` | Object | A raw metadata object that is sent back from the AWS S3 service.  It contains information about the request, used for debugging and troubleshooting purposes. |
 
-Note that the AWS SDK does not preserve metadata, such as ACL and storage class, when moving objects.
+**Notes:** 
+
+- The AWS SDK does not preserve metadata, such as ACL and storage class, when moving objects.
 
 ### moveFiles
 
@@ -572,7 +629,11 @@ The `moveFiles()` method recursively moves multiple files / directories from S3 
 ```js
 try {
 	// move selected files
-	let { files, bytes } = await s3.moveFiles({ remotePath: 's3dir/uploadedimages', destPath: 's3dir/copyofimages', filespec: /\.gif$/ });
+	let { files, bytes } = await s3.moveFiles({ 
+		remotePath: 's3dir/uploadedimages/', 
+		destPath: 's3dir/copyofimages/', 
+		filespec: /\.gif$/ 
+	});
 }
 catch(err) {
 	// handle error here
@@ -606,8 +667,8 @@ If you specify a `filter` function, it is called for each matching S3 key, and p
 try {
 	// move selected files
 	let { files } = await s3.moveFiles({ 
-		remotePath: 's3dir/uploadedimages', 
-		destPath: 's3dir/copyofimages', 
+		remotePath: 's3dir/uploadedimages/', 
+		destPath: 's3dir/copyofimages/', 
 		
 		filter: function(file) {
 			// only move large files 1MB+
@@ -626,8 +687,8 @@ If you specify a `progress` function, it will be called periodically with an obj
 try {
 	// move selected files
 	let { files } = await s3.moveFiles({ 
-		remotePath: 's3dir/uploadedimages', 
-		destPath: 's3dir/copyofimages', 
+		remotePath: 's3dir/uploadedimages/', 
+		destPath: 's3dir/copyofimages/', 
 		
 		progress: function(progress) {
 			console.log( `Moved ${progress.loaded} of ${progress.total} bytes.` );
@@ -639,7 +700,10 @@ catch(err) {
 }
 ```
 
-Note that the AWS SDK does not preserve metadata, such as ACL and storage class, when moving objects.
+**Notes:** 
+
+- Always include a trailing slash when specifying directories.
+- The AWS SDK does not preserve metadata, such as ACL and storage class, when moving objects.
 
 ### delete
 
@@ -668,7 +732,9 @@ The response object will contain the following keys, which you can destruct into
 |---------------|------|-------------|
 | `meta` | Object | A raw metadata object that is sent back from the AWS S3 service.  It contains information about the request, used for debugging and troubleshooting purposes. |
 
-**Note:** This will also remove the object from the [Cache](https://github.com/jhuckaby/s3-api/blob/main/README.md#caching), if enabled.
+**Notes:**
+
+- This will also remove the object from the [Cache](https://github.com/jhuckaby/s3-api/blob/main/README.md#caching), if enabled.
 
 ### deleteFiles
 
@@ -677,7 +743,10 @@ The `deleteFiles()` method recursively deletes multiple files / directories from
 ```js
 try {
 	// delete selected files
-	let { files, bytes } = await s3.deleteFiles({ remotePath: 's3dir/uploadedimages', filespec: /\.gif$/ });
+	let { files, bytes } = await s3.deleteFiles({ 
+		remotePath: 's3dir/uploadedimages/', 
+		filespec: /\.gif$/ 
+	});
 }
 catch(err) {
 	// handle error here
@@ -696,8 +765,6 @@ The method accepts an object containing the following properties:
 | `threads` | Integer | Optionally increase the threads to improve performance at the cost of additional HTTP connections. |
 | `bucket` | String | Optionally specify the S3 bucket where the record is stored.  This is usually set in the class constructor. |
 
-Please note that `filter` and `older` are mutually exclusive.  Only one may be provided (the reason is, the `older` feature uses `filter` internally).
-
 The response object will contain the following keys, which you can destruct into variables as shown above:
 
 | Property Name | Type | Description |
@@ -711,7 +778,7 @@ If you specify a `filter` function, it is called for each matching S3 key, and p
 try {
 	// delete selected files
 	let { files } = await s3.deleteFiles({ 
-		remotePath: 's3dir/uploadedimages', 
+		remotePath: 's3dir/uploadedimages/', 
 		
 		filter: function(file) {
 			// only delete large files 1MB+
@@ -730,7 +797,7 @@ If you specify a `progress` function, it will be called periodically with an obj
 try {
 	// move selected files
 	let { files } = await s3.deleteFiles({ 
-		remotePath: 's3dir/uploadedimages', 
+		remotePath: 's3dir/uploadedimages/', 
 		
 		progress: function(progress) {
 			console.log( `Deleted ${progress.loaded} of ${progress.total} bytes.` );
@@ -742,6 +809,11 @@ catch(err) {
 }
 ```
 
+**Notes:** 
+
+- Always include a trailing slash when specifying directories.
+- `filter` and `older` are mutually exclusive.  Only one may be provided (the reason is, the `older` feature uses `filter` internally).
+
 ### uploadFile
 
 The `uploadFile()` method uploads a file from the local filesystem to an object in S3.  This uses streams and multi-part chunks internally, so it can handle files of any size while using very little memory.  Example:
@@ -749,7 +821,10 @@ The `uploadFile()` method uploads a file from the local filesystem to an object 
 ```js
 try {
 	// upload file
-	let { meta } = await s3.uploadFile({ localFile: '/path/to/image.gif', key: 's3dir/myfile.gif' });
+	let { meta } = await s3.uploadFile({ 
+		localFile: '/path/to/image.gif', 
+		key: 's3dir/myfile.gif' 
+	});
 }
 catch(err) {
 	// handle error here
@@ -792,7 +867,9 @@ catch(err) {
 }
 ```
 
-Note that you can omit the filename portion of the `key` property if you want.  Specifically, if the `key` ends with a slash (`/`) this will trigger the library to automatically append the local filename to the end of the S3 key.
+**Notes:** 
+
+- You can omit the filename portion of the `key` property if you want.  Specifically, if the `key` ends with a slash (`/`) this will trigger the library to automatically append the local filename to the end of the S3 key.
 
 ### uploadFiles
 
@@ -801,7 +878,11 @@ The `uploadFiles()` method recursively uploads multiple files / directories from
 ```js
 try {
 	// upload selected files
-	let { files } = await s3.uploadFiles({ localPath: '/path/to/images', remotePath: 's3dir/uploadedimages', filespec: /\.gif$/ });
+	let { files } = await s3.uploadFiles({ 
+		localPath: '/path/to/images/', 
+		remotePath: 's3dir/uploadedimages/', 
+		filespec: /\.gif$/ 
+	});
 }
 catch(err) {
 	// handle error here
@@ -836,8 +917,8 @@ If you specify a `filter` function, it is called for each file, and passed the f
 try {
 	// upload selected files
 	let { files } = await s3.uploadFiles({ 
-		localPath: '/path/to/images', 
-		remotePath: 's3dir/uploadedimages', 
+		localPath: '/path/to/images/', 
+		remotePath: 's3dir/uploadedimages/', 
 		
 		filter: function(file, stats) {
 			// only include large files 1MB+
@@ -856,8 +937,8 @@ If you specify a `progress` function, it will be called periodically with an obj
 try {
 	// upload selected files
 	let { files } = await s3.uploadFiles({ 
-		localPath: '/path/to/images', 
-		remotePath: 's3dir/uploadedimages', 
+		localPath: '/path/to/images/', 
+		remotePath: 's3dir/uploadedimages/', 
 		
 		progress: function(progress) {
 			console.log( `Uploaded ${progress.loaded} of ${progress.total} bytes.` );
@@ -869,6 +950,10 @@ catch(err) {
 }
 ```
 
+**Notes:** 
+
+- Always include a trailing slash when specifying directories.
+
 ### downloadFile
 
 The `downloadFile()` method downloads an object from S3, and saves it to a local file on disk.  The local file's parent directories will be automatically created if needed.  This uses streams internally, so it can handle files of any size while using very little memory.  Example:
@@ -876,7 +961,10 @@ The `downloadFile()` method downloads an object from S3, and saves it to a local
 ```js
 try {
 	// download file
-	let { meta } = await s3.downloadFile({ key: 's3dir/myfile.gif', localFile: '/path/to/image.gif' });
+	let { meta } = await s3.downloadFile({ 
+		key: 's3dir/myfile.gif', 
+		localFile: '/path/to/image.gif' 
+	});
 }
 catch(err) {
 	// handle error here
@@ -918,7 +1006,9 @@ catch(err) {
 }
 ```
 
-Note that you can omit the filename portion of the `localFile` property if you want.  Specifically, if the `localFile` ends with a slash (`/`) this will trigger the library to automatically append the filename from the S3 key.
+**Notes:** 
+
+- You can omit the filename portion of the `localFile` property if you want.  Specifically, if the `localFile` ends with a slash (`/`) this will trigger the library to automatically append the filename from the S3 key.
 
 ### downloadFiles
 
@@ -927,7 +1017,11 @@ The `downloadFiles()` method recursively downloads multiple files / directories 
 ```js
 try {
 	// download selected files
-	let { files, bytes } = await s3.downloadFiles({ remotePath: 's3dir/uploadedimages', localPath: '/path/to/images', filespec: /\.gif$/ });
+	let { files, bytes } = await s3.downloadFiles({ 
+		remotePath: 's3dir/uploadedimages/', 
+		localPath: '/path/to/images/', 
+		filespec: /\.gif$/ 
+	});
 }
 catch(err) {
 	// handle error here
@@ -961,8 +1055,8 @@ If you specify a `filter` function, it is called for each matching S3 key, and p
 try {
 	// download selected files
 	let { files } = await s3.downloadFiles({ 
-		remotePath: 's3dir/uploadedimages', 
-		localPath: '/path/to/images', 
+		remotePath: 's3dir/uploadedimages/', 
+		localPath: '/path/to/images/', 
 		
 		filter: function(file) {
 			// only download large files 1MB+
@@ -981,8 +1075,8 @@ If you specify a `progress` function, it will be called periodically with an obj
 try {
 	// download selected files
 	let { files } = await s3.downloadFiles({ 
-		remotePath: 's3dir/uploadedimages', 
-		localPath: '/path/to/images', 
+		remotePath: 's3dir/uploadedimages/', 
+		localPath: '/path/to/images/', 
 		
 		progress: function(progress) {
 			console.log( `Downloaded ${progress.loaded} of ${progress.total} bytes.` );
@@ -993,6 +1087,10 @@ catch(err) {
 	// handle error here
 }
 ```
+
+**Notes:** 
+
+- Always include a trailing slash when specifying directories.
 
 ### putBuffer
 

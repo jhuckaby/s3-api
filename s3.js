@@ -975,9 +975,12 @@ class S3API {
 		// opts: { bucket, remotePath, filespec, threads, localPath, compress, suffix }
 		// result: { files[] }
 		let self = this;
+		
 		if (!opts.localPath) opts.localPath = process.cwd();
-		opts.localPath = Path.resolve(opts.localPath);
+		opts.localPath = Path.resolve(opts.localPath).replace(/\/$/, '');
+		
 		if (!opts.remotePath) opts.remotePath = '';
+		opts.remotePath = opts.remotePath.replace(/\/$/, '');
 		
 		this.logDebug(9, "Scanning for local files: " + opts.localPath, opts);
 		
@@ -1039,11 +1042,14 @@ class S3API {
 		// opts: { bucket, remotePath, filespec, threads, localPath, decompress, strip }
 		// result: { files([{ key, size, mtime }, ...]), total_bytes }
 		let self = this;
-		if (!opts.localPath) opts.localPath = process.cwd();
-		opts.localPath = Path.resolve(opts.localPath);
 		
 		this.list(opts, function(err, files, bytes) {
 			if (err) return callback(err, null, null);
+			
+			// normalize paths
+			if (!opts.localPath) opts.localPath = process.cwd();
+			opts.localPath = Path.resolve(opts.localPath).replace(/\/$/, '');
+			opts.remotePath = opts.remotePath.replace(/\/$/, '');
 			
 			// setup progress
 			var progressHandler = opts.progress || function() {};

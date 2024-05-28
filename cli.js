@@ -109,43 +109,43 @@ const CMD_HELP_TEXT = {
 	copy: `s3 copy s3://my-bucket/users/oldkermit.json s3://my-bucket/users/newkermit.json`,
 	
 	// copyFiles: `s3 copyFiles --bucket my-bucket --remotePath users --destPath newusers`,
-	copyFiles: `s3 copyFiles s3://my-bucket/users s3://my-bucket/newusers`,
+	copyFiles: `s3 copyFiles s3://my-bucket/users/ s3://my-bucket/newusers/`,
 	
 	// move: `s3 move --bucket my-bucket --sourceKey "users/oldkermit.json" --key "users/newkermit.json"`,
 	move: `s3 move s3://my-bucket/users/oldkermit.json s3://my-bucket/users/newkermit.json`,
 	
 	// moveFiles: `s3 moveFiles --bucket my-bucket --remotePath users --destPath newusers`,
-	moveFiles: `s3 moveFiles s3://my-bucket/users s3://my-bucket/newusers`,
+	moveFiles: `s3 moveFiles s3://my-bucket/users/ s3://my-bucket/newusers/`,
 	
 	// delete: `s3 delete --bucket my-bucket --key "s3dir/myfile.gif"`,
 	delete: `s3 delete s3://my-bucket/s3dir/myfile.gif`,
 	
 	// deleteFiles: `s3 deleteFiles --bucket my-bucket --remotePath "s3dir/uploaded" --filespec '\\.gif$'`,
-	deleteFiles: `s3 deleteFiles s3://my-bucket/s3dir/uploaded --filespec '\\.gif$'`,
+	deleteFiles: `s3 deleteFiles s3://my-bucket/s3dir/uploaded/ --filespec '\\.gif$'`,
 	
 	// uploadFile: `s3 uploadFile --bucket my-bucket --localFile "/path/to/image.gif" --key "s3dir/myfile.gif"`,
 	upload: `s3 upload /path/to/image.gif s3://my-bucket/s3dir/myfile.gif`,
 	
 	// uploadFiles: `s3 uploadFiles --bucket my-bucket --localPath "/path/to/images" --remotePath "s3dir/uploaded"`,
-	uploadFiles: `s3 uploadFiles /path/to/images s3://my-bucket/s3dir/uploaded`,
+	uploadFiles: `s3 uploadFiles /path/to/images/ s3://my-bucket/s3dir/uploaded/`,
 	
 	// downloadFile: `s3 downloadFile --bucket my-bucket --key "s3dir/myfile.gif" --localFile "/path/to/image.gif"`,
 	download: `s3 download s3://my-bucket/s3dir/myfile.gif /path/to/image.gif`,
 	
 	// downloadFiles: `s3 downloadFiles --bucket my-bucket --remotePath "s3dir/uploaded" --localPath "/path/to/images"`,
-	downloadFiles: `s3 downloadFiles s3://my-bucket/s3dir/uploaded /path/to/images`,
+	downloadFiles: `s3 downloadFiles s3://my-bucket/s3dir/uploaded/ /path/to/images/`,
 	
 	// snapshot: `s3 snapshot --bucket my-bucket --remotePath "s3dir/images" --localFile "/path/to/backup-[yyyy]-[mm]-[dd].zip"`,
-	snapshot: `s3 snapshot s3://my-bucket/s3dir/images /path/to/snapshot-[yyyy]-[mm]-[dd].zip`,
+	snapshot: `s3 snapshot s3://my-bucket/s3dir/images/ /path/to/snapshot-[yyyy]-[mm]-[dd].zip`,
 	
 	// restoreSnapshot: `s3 restoreSnapshot --bucket my-bucket --localFile "/path/to/backup-[yyyy]-[mm]-[dd].zip" --remotePath "s3dir/images"`,
-	restoreSnapshot: `s3 restoreSnapshot /path/to/snapshot-2024-05-22.zip s3://my-bucket/s3dir/images`,
+	restoreSnapshot: `s3 restoreSnapshot /path/to/snapshot-2024-05-22.zip s3://my-bucket/s3dir/images/`,
 	
 	// backup: `s3 backup --bucket my-bucket --localPath "/path/to/files" --key "backups/mybackup-[yyyy]-[mm]-[dd].zip"`,
-	backup: `s3 backup /path/to/files s3://my-bucket/backups/mybackup-[yyyy]-[mm]-[dd].zip`,
+	backup: `s3 backup /path/to/files/ s3://my-bucket/backups/mybackup-[yyyy]-[mm]-[dd].zip`,
 	
 	// restoreBackup: `s3 restoreBackup --bucket my-bucket --key "backups/mybackup-2024-05-22.zip" --localPath "/path/to/files"`
-	restoreBackup: `s3 restoreBackup s3://my-bucket/backups/mybackup-2024-05-22.zip /path/to/files`
+	restoreBackup: `s3 restoreBackup s3://my-bucket/backups/mybackup-2024-05-22.zip /path/to/files/`
 };
 
 const app = {
@@ -298,9 +298,9 @@ const app = {
 		let spec = args.other.shift() || null;
 		if (!spec) return false;
 		
-		if (spec.match(/^s3\:\/\/([^\/]+)\/(.*)$/)) {
-			args[bucket_name] = RegExp.$1;
-			args[key_name] = RegExp.$2;
+		if (spec.match(/^(s3:\/\/|s3:|\/\/)([^\/]+)\/(.*)$/i)) {
+			args[bucket_name] = RegExp.$2;
+			args[key_name] = RegExp.$3;
 			
 			// println( gray.bold("S3: ") + gray( args.bucket ) + gray(" (" + this.s3.region + ")") );
 			return true;
@@ -1196,7 +1196,7 @@ const app = {
 		delete args.other;
 		println( gray(JSON.stringify( { region: this.s3.region, ...args } )) + "\n" );
 		
-		let src_path = args.localPath;
+		let src_path = Path.resolve(args.localPath).replace(/\/$/, '');
 		delete args.localPath;
 		
 		// allow s3 key to have date/time placeholders, e.g. `my-backup-[yyyy]-[mm]-[dd].zip`
@@ -1293,7 +1293,7 @@ const app = {
 		delete args.other;
 		println( gray(JSON.stringify( { region: this.s3.region, ...args } )) + "\n" );
 		
-		let dest_path = Path.resolve(args.localPath);
+		let dest_path = Path.resolve(args.localPath).replace(/\/$/, '');
 		delete args.localPath;
 		
 		let arch_file = Path.join( TEMP_DIR, 's3-temp-' + process.pid );
