@@ -380,6 +380,7 @@ class S3API {
 	 * @param {number} [opts.threads=1] - Optionally increase the threads to improve performance.
 	 * @param {Object} [opts.sourceBucket] - Optionally override the S3 bucket used to read the source files.
 	 * @param {string} [opts.bucket] - Optionally override the S3 bucket.
+	 * @param {Function} [opts.progress] - A function to receive progress udpates.
 	 * @param {boolean} [opts.dry=false] - Optionally do a dry run (take no action).
 	 * @returns {Promise<ListResponse>} - A promise that resolves to a custom object.
 	 */
@@ -395,16 +396,31 @@ class S3API {
 		this.list(opts, function(err, files, bytes) {
 			if (err) return callback(err, null, null);
 			
+			// setup progress
+			var progressHandler = opts.progress || function() {};
+			delete opts.progress; // don't pass this down to copy
+			var total = bytes;
+			var loaded = 0;
+			
 			self.logDebug(8, "Copying " + files.length + " files", files);
 			
 			async.eachLimit( files, opts.threads || 1,
 				function(file, callback) {
 					opts.sourceKey = file.key;
 					opts.key = opts.destPath + file.key.slice(self.prefix.length + opts.remotePath.length);
-					self.copy( opts, callback );
+					self.copy( opts, function(err) {
+						if (err) return callback(err);
+						
+						// update progress
+						loaded += file.size;
+						progressHandler({ loaded, total });
+						
+						callback();
+					} ); // copy
 				},
 				function(err) {
 					if (err) return callback(err, null, null);
+					self.logDebug(9, "All files moved successfully");
 					callback(null, files, bytes);
 				}
 			); // eachLimit
@@ -446,6 +462,7 @@ class S3API {
 	 * @param {number} [opts.threads=1] - Optionally increase the threads to improve performance.
 	 * @param {Object} [opts.sourceBucket] - Optionally override the S3 bucket used to read the source files.
 	 * @param {string} [opts.bucket] - Optionally override the S3 bucket.
+	 * @param {Function} [opts.progress] - A function to receive progress udpates.
 	 * @param {boolean} [opts.dry=false] - Optionally do a dry run (take no action).
 	 * @returns {Promise<ListResponse>} - A promise that resolves to a custom object.
 	 */
@@ -461,16 +478,32 @@ class S3API {
 		this.list(opts, function(err, files, bytes) {
 			if (err) return callback(err, null, null);
 			
+			// setup progress
+			var progressHandler = opts.progress || function() {};
+			delete opts.progress; // don't pass this down to move
+			var total = bytes;
+			var loaded = 0;
+			
 			self.logDebug(8, "Moving " + files.length + " files", files);
 			
 			async.eachLimit( files, opts.threads || 1,
 				function(file, callback) {
 					opts.sourceKey = file.key;
 					opts.key = opts.destPath + file.key.slice(self.prefix.length + opts.remotePath.length);
-					self.move( opts, callback );
+					
+					self.move( opts, function(err) {
+						if (err) return callback(err);
+						
+						// update progress
+						loaded += file.size;
+						progressHandler({ loaded, total });
+						
+						callback();
+					} ); // move
 				},
 				function(err) {
 					if (err) return callback(err, null, null);
+					self.logDebug(9, "All files moved successfully");
 					callback(null, files, bytes);
 				}
 			); // eachLimit
@@ -813,6 +846,7 @@ class S3API {
 	 * @param {string} [opts.bucket] - Optionally override the S3 bucket.
 	 * @param {Object} [opts.params] - Optionally specify parameters to the S3 API, for e.g. ACL and Storage Class. 
 	 * @param {boolean} [opts.compress=false] - Optionally compress the file during upload.
+	 * @param {Function} [opts.progress] - A function to receive progress udpates.
 	 * @param {boolean} [opts.dry=false] - Optionally do a dry run (take no action).
 	 * @returns {Promise<MetaResponse>} - A promise that resolves to a custom object.
 	 */
@@ -838,7 +872,7 @@ class S3API {
 				return callback(err);
 			}
 			
-			self.logDebug(8, "Uploading file: " + opts.key, { file: opts.localFile, size: stats.size });
+			self.logDebug(8, "Uploading file: " + opts.key + " to: " + opts.key, { file: opts.localFile, key: opts.key, size: stats.size });
 			
 			if (opts.dry) {
 				self.logDebug(9, "Dry-run, returning faux success");
@@ -859,6 +893,7 @@ class S3API {
 	 * @param {string} opts.localFile - A path to the destination file on local disk.
 	 * @param {string} [opts.bucket] - Optionally override the S3 bucket.
 	 * @param {boolean} [opts.decompress=false] - Optionally decompress the file during download.
+	 * @param {Function} [opts.progress] - A function to receive progress udpates.
 	 * @param {boolean} [opts.dry=false] - Optionally do a dry run (take no action).
 	 * @returns {Promise<MetaResponse>} - A promise that resolves to a custom object.
 	 */
@@ -871,7 +906,7 @@ class S3API {
 		if (typeof(opts.localFile) != 'string') return callback( new Error("The 'localFile' property must be a string (file path).") );
 		if (opts.localFile.match(/\/$/)) opts.localFile += Path.basename(opts.key); // copy filename from key
 		
-		this.logDebug(8, "Downloading file: " + opts.key, { file: opts.localFile });
+		this.logDebug(8, "Downloading file: " + opts.key + " to: " + opts.localFile, { key: opts.key, file: opts.localFile });
 		
 		if (opts.dry) {
 			this.logDebug(9, "Dry-run, returning faux success");
@@ -909,6 +944,7 @@ class S3API {
 					if (done) return; else done = true;
 					if (tracker) tracker.end();
 					self.logDebug(9, "Download complete: " + opts.key, opts.localFile);
+					self.logDebug(9, "File written: " + opts.localFile);
 					callback( null, meta );
 				});
 				
@@ -930,6 +966,7 @@ class S3API {
 	 * @param {Object} [opts.params] - Optionally specify parameters to the S3 API, for e.g. ACL and Storage Class. 
 	 * @param {boolean} [opts.compress=false] - Optionally compress the files during upload.
 	 * @param {string} [opts.suffix] - Optionally append a suffix to every destination S3 key, e.g. `.gz` for compressed files.
+	 * @param {Function} [opts.progress] - A function to receive progress udpates.
 	 * @param {boolean} [opts.dry=false] - Optionally do a dry run (take no action).
 	 * @returns {Promise<ListResponse>} - A promise that resolves to a custom object.
 	 */
@@ -944,21 +981,38 @@ class S3API {
 		
 		this.logDebug(9, "Scanning for local files: " + opts.localPath, opts);
 		
-		Tools.findFiles( opts.localPath, opts, function(err, files) {
+		Tools.findFiles( opts.localPath, { ...opts, stats: true }, function(err, files) {
 			if (err) {
 				self.logError('glob', "Failed to list local files: " + opts.localPath + ": " + (err.message || err), err);
 				return callback(err, null);
 			}
 			
-			self.logDebug(8, "Uploading " + files.length + " files", files);
+			// calculate total size and setup progress
+			var progressHandler = opts.progress || function() {};
+			delete opts.progress; // don't pass this down to uploadFile
+			var total = 0;
+			var loaded = 0;
+			files.forEach( function(file) { total += file.size; } );
+			
+			self.logDebug(8, "Uploading " + files.length + " files (" + Tools.getTextFromBytes(total) + ")", files);
 			
 			async.eachLimit( files, opts.threads || 1,
 				function(file, callback) {
-					let dest_key = opts.remotePath + file.slice(opts.localPath.length) + (opts.suffix || '');
-					self.uploadFile( Tools.mergeHashes(opts, { key: dest_key, localFile: file }), callback );
+					let dest_key = opts.remotePath + file.path.slice(opts.localPath.length) + (opts.suffix || '');
+					
+					self.uploadFile( Tools.mergeHashes(opts, { key: dest_key, localFile: file.path }), function(err) {
+						if (err) return callback(err);
+						
+						// update progress
+						loaded += file.size;
+						progressHandler({ loaded, total });
+						
+						callback();
+					} ); // uploadFile
 				},
 				function(err) {
 					if (err) return callback(err, null);
+					self.logDebug(9, "All files uploaded successfully");
 					callback(null, files);
 				}
 			); // eachLimit
@@ -976,6 +1030,7 @@ class S3API {
 	 * @param {string} [opts.bucket] - Optionally override the S3 bucket.
 	 * @param {boolean} [opts.decompress=false] - Optionally decompress the files during download.
 	 * @param {RegExp} [opts.strip] - Optionally strip a suffix from every destination filename.
+	 * @param {Function} [opts.progress] - A function to receive progress udpates.
 	 * @param {boolean} [opts.dry=false] - Optionally do a dry run (take no action).
 	 * @returns {Promise<ListResponse>} - A promise that resolves to a custom object.
 	 */
@@ -990,16 +1045,32 @@ class S3API {
 		this.list(opts, function(err, files, bytes) {
 			if (err) return callback(err, null, null);
 			
+			// setup progress
+			var progressHandler = opts.progress || function() {};
+			delete opts.progress; // don't pass this down to downloadFile
+			var total = bytes;
+			var loaded = 0;
+			
 			self.logDebug(8, "Downloading " + files.length + " files", files);
 			
 			async.eachLimit( files, opts.threads || 1,
 				function(file, callback) {
 					let dest_file = opts.localPath + file.key.slice(self.prefix.length + opts.remotePath.length);
 					if (opts.strip) dest_file = dest_file.replace(opts.strip, '');
-					self.downloadFile( Tools.mergeHashes(opts, { key: file.key.slice(self.prefix.length), localFile: dest_file }), callback );
+					
+					self.downloadFile( Tools.mergeHashes(opts, { key: file.key.slice(self.prefix.length), localFile: dest_file }), function(err) {
+						if (err) return callback(err);
+						
+						// update progress
+						loaded += file.size;
+						progressHandler({ loaded, total });
+						
+						callback();
+					} ); // downloadFile
 				},
 				function(err) {
 					if (err) return callback(err, null, null);
+					self.logDebug(9, "All files downloaded successfully");
 					callback(null, files, bytes);
 				}
 			); // eachLimit
@@ -1015,6 +1086,7 @@ class S3API {
 	 * @param {(number|string)} [opts.older] - Optionally filter the S3 files based on their modification date.
 	 * @param {number} [opts.threads=1] - Optionally increase the threads to improve performance.
 	 * @param {string} [opts.bucket] - Optionally specify the S3 bucket where the folders reside.
+	 * @param {Function} [opts.progress] - A function to receive progress udpates.
 	 * @param {boolean} [opts.dry=false] - Optionally do a dry run (take no action).
 	 * @returns {Promise<ListResponse>} - A promise that resolves to a custom object.
 	 */
@@ -1027,12 +1099,29 @@ class S3API {
 		this.list(opts, function(err, files, bytes) {
 			if (err) return callback(err, null, null);
 			
+			// setup progress
+			var progressHandler = opts.progress || function() {};
+			delete opts.progress; // don't pass this down to delete
+			var total = bytes;
+			var loaded = 0;
+			
+			self.logDebug(8, "Deleting " + files.length + " files", files);
+			
 			async.eachLimit( files, opts.threads || 1,
 				function(file, callback) {
-					self.delete( Tools.mergeHashes(opts, { key: file.key.slice(self.prefix.length) }), callback);
+					self.delete( Tools.mergeHashes(opts, { key: file.key.slice(self.prefix.length) }), function(err) {
+						if (err) return callback(err);
+						
+						// update progress
+						loaded += file.size;
+						progressHandler({ loaded, total });
+						
+						callback();
+					}); // delete
 				},
 				function(err) {
 					if (err) return callback(err, null, null);
+					self.logDebug(9, "All files deleted successfully");
 					callback(null, files, bytes);
 				}
 			); // eachLimit
@@ -1048,6 +1137,7 @@ class S3API {
 	 * @param {Object} [opts.params] - Optionally specify parameters to the S3 API, for e.g. ACL and Storage Class. 
 	 * @param {boolean} [opts.compress=false] - Optionally compress the buffer during upload.
 	 * @param {boolean} [opts.dry=false] - Optionally do a dry run (take no action).
+	 * @param {Function} [opts.progress] - A function to receive progress udpates.
 	 * @returns {Promise<MetaResponse>} - A promise that resolves to a custom object.
 	 */
 	putBuffer(opts, callback) {
@@ -1081,6 +1171,7 @@ class S3API {
 	 * @param {string} opts.key - The key (S3 path) to fetch.
 	 * @param {string} [opts.bucket] - Optionally override the S3 bucket.
 	 * @param {boolean} [opts.decompress=false] - Optionally decompress the buffer during download.
+	 * @param {Function} [opts.progress] - A function to receive progress udpates.
 	 * @returns {Promise<GetResponse>} - A promise that resolves to a custom object.
 	 */
 	getBuffer(opts, callback) {
@@ -1117,6 +1208,7 @@ class S3API {
 	 * @param {Object} [opts.params] - Optionally specify parameters to the S3 API, for e.g. ACL and Storage Class. 
 	 * @param {boolean} [opts.compress=false] - Optionally compress the stream during upload.
 	 * @param {boolean} [opts.dry=false] - Optionally do a dry run (take no action).
+	 * @param {Function} [opts.progress] - A function to receive progress udpates.
 	 * @returns {Promise<MetaResponse>} - A promise that resolves to a custom object.
 	 */
 	putStream(opts, callback) {
@@ -1165,6 +1257,11 @@ class S3API {
 			params: params
 		});
 		
+		if (opts.progress) {
+			// { loaded, total }
+			upload.on('httpUploadProgress', opts.progress);
+		}
+		
 		upload.done()
 			.then( function(data) {
 				if (tracker) tracker.end();
@@ -1184,6 +1281,7 @@ class S3API {
 	 * @param {string} opts.key - The key (S3 path) to fetch.
 	 * @param {string} [opts.bucket] - Optionally override the S3 bucket.
 	 * @param {boolean} [opts.decompress=false] - Optionally decompress the stream during download.
+	 * @param {Function} [opts.progress] - A function to receive progress udpates.
 	 * @returns {Promise<GetResponse>} - A promise that resolves to a custom object.
 	 */
 	getStream(opts, callback) {
@@ -1208,7 +1306,16 @@ class S3API {
 				// break out of promise context
 				process.nextTick( function() {
 					if (tracker) tracker.end();
-					self.logDebug(9, "Stream started: " + opts.key);
+					var count = 0;
+					var len = parseInt( data.ContentLength || 0 );
+					self.logDebug(9, "Stream started: " + opts.key, { size: len });
+					
+					if (opts.progress) {
+						data.Body.on('data', function(chunk) {
+							count += chunk.length;
+							opts.progress({ loaded: count, total: len });
+						});
+					}
 					
 					if (opts.decompress) {
 						self.logDebug(9, "Decompressing stream with gunzip");

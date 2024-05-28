@@ -38,6 +38,12 @@ cli.mapArgs({
 	'dry_run': 'dry'
 });
 
+// override defaults for progress bar signal handling
+cli.progress.defaults.catchInt = true;
+cli.progress.defaults.catchTerm = true;
+cli.progress.defaults.catchCrash = true;
+cli.progress.defaults.exitOnSig = true;
+
 // optional config file for args defaults
 const config_file = Path.join( process.env.HOME, '.s3-config.json' );
 if (fs.existsSync(config_file)) Tools.mergeHashInto(cli.args, JSON.parse( fs.readFileSync(config_file, 'utf8') ));
@@ -355,7 +361,24 @@ const app = {
 		delete args.smaller;
 	},
 	
-	async doS3Cmd(cmd) {
+	progressHandler(progress) {
+		// show progress of file upload/download
+		if (progress && progress.total && progress.loaded) {
+			cli.progress.update({
+				amount: progress.loaded / progress.total,
+				text: gray( '(' + Tools.getTextFromBytes(progress.loaded) + ' of ' + Tools.getTextFromBytes(progress.total) + ')' )
+			});
+		}
+		else if (progress && progress.loaded) {
+			// indeterminate (i.e. gzip stream)
+			cli.progress.update({
+				amount: 1,
+				text: gray( '(' + Tools.getTextFromBytes(progress.loaded) + ')' )
+			});
+		}
+	},
+	
+	async callS3API(cmd) {
 		// send cmd to s3
 		delete args.other;
 		
@@ -364,7 +387,7 @@ const app = {
 		try {
 			let result = await this.s3[cmd](args);
 			if (result && result.meta && result.meta.Body) delete result.meta.Body; // way too verbose
-			println( "\n" + cli.jsonPretty(result || false) );
+			verboseln( "\n" + cli.jsonPretty(result || false) );
 		}
 		catch (err) {
 			this.die(err);
@@ -424,7 +447,7 @@ const app = {
 			catch (err) { this.die(err); }
 		}
 		
-		await this.doS3Cmd(this.cmd);
+		await this.callS3API(this.cmd);
 	},
 	
 	async cmd_putStream() {
@@ -433,7 +456,7 @@ const app = {
 		this.shiftS3Spec('bucket', 'key') || this.dieUsage(this.cmd);
 		
 		args.value = process.stdin;
-		await this.doS3Cmd(this.cmd);
+		await this.callS3API(this.cmd);
 	},
 	
 	async cmd_update() {
@@ -451,14 +474,14 @@ const app = {
 		}
 		delete args.update;
 		
-		await this.doS3Cmd(this.cmd);
+		await this.callS3API(this.cmd);
 	},
 	
 	async cmd_get() {
 		// get json record
 		// s3 get s3://my-bucket/users/kermit.json
 		this.shiftS3Spec('bucket', 'key') || this.dieUsage(this.cmd);
-		// await this.doS3Cmd(this.cmd);
+		// await this.callS3API(this.cmd);
 		
 		delete args.other;
 		println( gray(JSON.stringify( { region: this.s3.region, ...args } )) + "\n" );
@@ -506,7 +529,23 @@ const app = {
 		// head json record
 		// s3 head s3://my-bucket/users/kermit.json
 		this.shiftS3Spec('bucket', 'key') || this.dieUsage(this.cmd);
-		await this.doS3Cmd(this.cmd);
+		// await this.callS3API(this.cmd);
+		
+		delete args.other;
+		println( gray(JSON.stringify( { region: this.s3.region, ...args } )) + "\n" );
+		
+		try {
+			let result = await this.s3[cmd](args);
+			if (result && result.meta && result.meta.Body) delete result.meta.Body; // way too verbose
+			
+			if (args.pretty) println( "\n" + cli.jsonPretty( result ) );
+			else println( "\n" + JSON.stringify( result ) );
+			
+			if (cli.args.quiet) console.log( cli.jsonPretty(result) );
+		}
+		catch (err) {
+			this.die(err);
+		}
 	},
 	
 	async cmd_list() {
@@ -514,7 +553,7 @@ const app = {
 		// s3 list s3://my-bucket/s3dir
 		this.shiftS3Spec('bucket', 'remotePath') || this.dieUsage(this.cmd);
 		this.addMultiFilter();
-		// await this.doS3Cmd(this.cmd);
+		// await this.callS3API(this.cmd);
 		
 		delete args.other;
 		println( gray(JSON.stringify( { region: this.s3.region, ...args } )) + "\n" );
@@ -580,7 +619,7 @@ const app = {
 		// list folders
 		// s3 listFolders s3://my-bucket/s3dir
 		this.shiftS3Spec('bucket', 'remotePath') || this.dieUsage(this.cmd);
-		// await this.doS3Cmd(this.cmd);
+		// await this.callS3API(this.cmd);
 		
 		delete args.other;
 		println( gray(JSON.stringify( { region: this.s3.region, ...args } )) + "\n" );
@@ -726,7 +765,7 @@ const app = {
 		
 		this.shiftS3Spec('sourceBucket', 'sourceKey') || this.dieUsage(this.cmd);
 		this.shiftS3Spec('bucket', 'key') || this.dieUsage(this.cmd);
-		await this.doS3Cmd(this.cmd);
+		await this.callS3API(this.cmd);
 	},
 	
 	async cmd_cp() {
@@ -741,7 +780,16 @@ const app = {
 		this.shiftS3Spec('sourceBucket', 'remotePath') || this.dieUsage(this.cmd);
 		this.shiftS3Spec('bucket', 'destPath') || this.dieUsage(this.cmd);
 		this.addMultiFilter();
-		await this.doS3Cmd(this.cmd);
+		
+		// show progress if we have a tty
+		if (cli.tty()) {
+			cli.progress.start();
+			args.progress = this.progressHandler;
+		}
+		
+		await this.callS3API(this.cmd);
+		
+		cli.progress.end();
 	},
 	
 	async cmd_move() {
@@ -757,7 +805,7 @@ const app = {
 		
 		this.shiftS3Spec('sourceBucket', 'sourceKey') || this.dieUsage(this.cmd);
 		this.shiftS3Spec('bucket', 'key') || this.dieUsage(this.cmd);
-		await this.doS3Cmd(this.cmd);
+		await this.callS3API(this.cmd);
 	},
 	
 	async cmd_mv() {
@@ -772,7 +820,16 @@ const app = {
 		this.shiftS3Spec('sourceBucket', 'remotePath') || this.dieUsage(this.cmd);
 		this.shiftS3Spec('bucket', 'destPath') || this.dieUsage(this.cmd);
 		this.addMultiFilter();
-		await this.doS3Cmd(this.cmd);
+		
+		// show progress if we have a tty
+		if (cli.tty()) {
+			cli.progress.start();
+			args.progress = this.progressHandler;
+		}
+		
+		await this.callS3API(this.cmd);
+		
+		cli.progress.end();
 	},
 	
 	async cmd_delete() {
@@ -787,7 +844,7 @@ const app = {
 		}
 		
 		this.shiftS3Spec('bucket', 'key') || this.dieUsage(this.cmd);
-		await this.doS3Cmd(this.cmd);
+		await this.callS3API(this.cmd);
 	},
 	
 	async cmd_rm() {
@@ -807,9 +864,21 @@ const app = {
 			return await this.cmd_uploadFiles();
 		}
 		
+		// show progress if we have a tty
+		if (cli.tty()) {
+			cli.progress.start({
+				pct: args.compress ? false : true,
+				amount: args.compress ? 1 : 0,
+				max: 1
+			});
+			args.progress = this.progressHandler;
+		}
+		
 		this.shiftOther('localFile') || this.dieUsage(this.cmd);
 		this.shiftS3Spec('bucket', 'key') || this.dieUsage(this.cmd);
-		await this.doS3Cmd('uploadFile');
+		await this.callS3API('uploadFile');
+		
+		cli.progress.end();
 	},
 	
 	async cmd_up() {
@@ -835,9 +904,17 @@ const app = {
 			return await this.cmd_downloadFiles();
 		}
 		
+		// show progress if we have a tty
+		if (cli.tty()) {
+			cli.progress.start();
+			args.progress = this.progressHandler;
+		}
+		
 		this.shiftS3Spec('bucket', 'key') || this.dieUsage(this.cmd);
 		this.shiftOther('localFile') || this.dieUsage(this.cmd);
-		await this.doS3Cmd('downloadFile');
+		await this.callS3API('downloadFile');
+		
+		cli.progress.end();
 	},
 	
 	async cmd_dl() {
@@ -852,7 +929,16 @@ const app = {
 		this.shiftOther('localPath') || this.dieUsage(this.cmd);
 		this.shiftS3Spec('bucket', 'remotePath') || this.dieUsage(this.cmd);
 		this.addMultiFilter();
-		await this.doS3Cmd(this.cmd);
+		
+		// show progress if we have a tty
+		if (cli.tty()) {
+			cli.progress.start();
+			args.progress = this.progressHandler;
+		}
+		
+		await this.callS3API(this.cmd);
+		
+		cli.progress.end();
 	},
 	
 	async cmd_downloadFiles() {
@@ -861,7 +947,16 @@ const app = {
 		this.shiftS3Spec('bucket', 'remotePath') || this.dieUsage(this.cmd);
 		this.shiftOther('localPath') || this.dieUsage(this.cmd);
 		this.addMultiFilter();
-		await this.doS3Cmd(this.cmd);
+		
+		// show progress if we have a tty
+		if (cli.tty()) {
+			cli.progress.start();
+			args.progress = this.progressHandler;
+		}
+		
+		await this.callS3API(this.cmd);
+		
+		cli.progress.end();
 	},
 	
 	async cmd_deleteFiles() {
@@ -869,7 +964,16 @@ const app = {
 		// s3 deleteFiles s3://my-bucket/s3dir/uploaded --filespec '\\.gif$'
 		this.shiftS3Spec('bucket', 'remotePath') || this.dieUsage(this.cmd);
 		this.addMultiFilter();
-		await this.doS3Cmd(this.cmd);
+		
+		// show progress if we have a tty
+		if (cli.tty()) {
+			cli.progress.start();
+			args.progress = this.progressHandler;
+		}
+		
+		await this.callS3API(this.cmd);
+		
+		cli.progress.end();
 	},
 	
 	async cmd_snapshot() {
@@ -913,6 +1017,12 @@ const app = {
 		
 		// reroute download to temp dir
 		args.localPath = Path.join( TEMP_DIR, 's3-temp-' + process.pid );
+		
+		// show progress if we have a tty
+		if (cli.tty()) {
+			cli.progress.start();
+			args.progress = this.progressHandler;
+		}
 		
 		// do the download
 		try {
@@ -963,6 +1073,8 @@ const app = {
 				fs.unlinkSync(file);
 			} );
 		}
+		
+		cli.progress.end();
 		
 		// and we're done
 		println( "\n" + cyan.bold("Snapshot written to: ") + yellow.bold(arch_file) );
@@ -1016,6 +1128,11 @@ const app = {
 		}
 		else this.die('Unsupported archive format: ' + arch_file);
 		
+		// show progress if we have a tty
+		if (cli.tty()) {
+			cli.progress.start();
+		}
+		
 		// do the expansion
 		try {
 			this.s3.logDebug(9, "Expanding archive", arch_cmd);
@@ -1041,6 +1158,11 @@ const app = {
 			}
 		}
 		
+		// show progress if we have a tty
+		if (cli.tty()) {
+			args.progress = this.progressHandler;
+		}
+		
 		// do the upload
 		args.localPath = temp_dir;
 		try {
@@ -1053,6 +1175,8 @@ const app = {
 		// delete temp dir
 		this.s3.logDebug(9, "Deleting temp dir", temp_dir);
 		Tools.rimraf.sync(temp_dir);
+		
+		cli.progress.end();
 		
 		println( "\n" + cyan.bold("Snapshot restored to: ") + yellow.bold('s3://' + args.bucket + '/' + args.remotePath) );
 	},
@@ -1100,6 +1224,12 @@ const app = {
 			return;
 		}
 		
+		// show progress if we have a tty
+		if (cli.tty()) {
+			cli.progress.start();
+			args.progress = this.progressHandler;
+		}
+		
 		// zip the local dir
 		try {
 			this.s3.logDebug(9, "Compressing archive", arch_cmd);
@@ -1132,6 +1262,7 @@ const app = {
 			args.older = args.expire;
 			args.remotePath = Path.dirname(args.key);
 			delete args.value;
+			delete args.progress;
 			
 			try {
 				await this.s3.deleteFiles(args);
@@ -1140,6 +1271,8 @@ const app = {
 				this.die(err);
 			}
 		}
+		
+		cli.progress.end();
 		
 		// and we're done
 		println( "\n" + cyan.bold("Backup saved to: ") + yellow.bold('s3://' + args.bucket + '/' + args.key) );
@@ -1183,6 +1316,12 @@ const app = {
 			return;
 		}
 		
+		// show progress if we have a tty
+		if (cli.tty()) {
+			cli.progress.start();
+			args.progress = this.progressHandler;
+		}
+		
 		// download archive to temp location
 		args.localFile = arch_file;
 		try {
@@ -1221,6 +1360,8 @@ const app = {
 		
 		// delete temp archive file
 		fs.unlinkSync( arch_file );
+		
+		cli.progress.end();
 		
 		// and we're done
 		println( "\n" + cyan.bold("Backup restored to: ") + yellow.bold(dest_path) );

@@ -403,7 +403,7 @@ Each item object passed to the iterator will contain the following properties:
 
 ### copy
 
-The `copy()` method copies one S3 object to another location.  This API can copy between buckets as well.  Example:
+The `copy()` method copies one S3 object to another S3 location.  This API can copy between buckets as well.  Example:
 
 ```js
 try {
@@ -467,6 +467,7 @@ The method accepts an object containing the following properties:
 | `destPath` | String | **(Required)** The base S3 path to copy files to.  This may be prepended with a `prefix` if set on the class instance. |
 | `filespec` | RegExp | Optionally filter the S3 files using a regular expression, matched on the filenames. |
 | `filter` | Function | Optionally provide a function to decide whether or not to include each file.  See below for usage. |
+| `progress` | Function | Optionally provide a progress function, which will be called periodically during the operation.  See below for usage. |
 | `threads` | Integer | Optionally increase the threads to improve performance.  Defaults to `1`. |
 | `sourceBucket` | String | Optionally override the S3 bucket used to read the source files.  This defaults to the class `bucket` parameter. |
 | `bucket` | String | Optionally specify the S3 bucket where the files are copied to.  This is usually set in the class constructor. |
@@ -499,11 +500,30 @@ catch(err) {
 }
 ```
 
+If you specify a `progress` function, it will be called periodically with an object containing `loaded` and `total` properties (both are byte counts).  Example use:
+
+```js
+try {
+	// copy selected files
+	let { files } = await s3.copyFiles({ 
+		remotePath: 's3dir/uploadedimages', 
+		destPath: 's3dir/copyofimages', 
+		
+		progress: function(progress) {
+			console.log( `Copied ${progress.loaded} of ${progress.total} bytes.` );
+		}
+	});
+}
+catch(err) {
+	// handle error here
+}
+```
+
 Note that the AWS SDK does not preserve metadata, such as ACL and storage class, when copying objects.
 
 ### move
 
-The `move()` method moves one S3 object to another location.  Essentially, it performs a [copy()](#copy) followed by a [delete()](#delete).  This can move objects between buckets as well.  Example:
+The `move()` method moves one S3 object to another S3 location.  Essentially, it performs a [copy()](#copy) followed by a [delete()](#delete).  This can move objects between buckets as well.  Example:
 
 ```js
 try {
@@ -567,6 +587,7 @@ The method accepts an object containing the following properties:
 | `destPath` | String | **(Required)** The base S3 path to move files to.  This may be prepended with a `prefix` if set on the class instance. |
 | `filespec` | RegExp | Optionally filter the S3 files using a regular expression, matched on the filenames. |
 | `filter` | Function | Optionally provide a function to decide whether or not to include each file.  See below for usage. |
+| `progress` | Function | Optionally provide a progress function, which will be called periodically during the operation.  See below for usage. |
 | `threads` | Integer | Optionally increase the threads to improve performance.  Defaults to `1`. |
 | `sourceBucket` | String | Optionally override the S3 bucket used to read the source files.  This defaults to the class `bucket` parameter. |
 | `bucket` | String | Optionally specify the S3 bucket where the files are moved to.  This is usually set in the class constructor. |
@@ -591,6 +612,25 @@ try {
 		filter: function(file) {
 			// only move large files 1MB+
 			return file.size > 1024 * 1024;
+		}
+	});
+}
+catch(err) {
+	// handle error here
+}
+```
+
+If you specify a `progress` function, it will be called periodically with an object containing `loaded` and `total` properties (both are byte counts).  Example use:
+
+```js
+try {
+	// move selected files
+	let { files } = await s3.moveFiles({ 
+		remotePath: 's3dir/uploadedimages', 
+		destPath: 's3dir/copyofimages', 
+		
+		progress: function(progress) {
+			console.log( `Moved ${progress.loaded} of ${progress.total} bytes.` );
 		}
 	});
 }
@@ -651,6 +691,7 @@ The method accepts an object containing the following properties:
 | `remotePath` | String | **(Required)** The base S3 path to delete files from.  This may be prepended with a `prefix` if set on the class instance. |
 | `filespec` | RegExp | Optionally filter the S3 files using a regular expression, matched on the filenames. |
 | `filter` | Function | Optionally provide a function to decide whether or not to delete each file.  See below for usage. |
+| `progress` | Function | Optionally provide a progress function, which will be called periodically during the operation.  See below for usage. |
 | `older` | Mixed | Optionally filter the S3 files based on their modification date, i.e. must be older than the specified number of seconds.  You can also specify a string here, e.g. "7 days". |
 | `threads` | Integer | Optionally increase the threads to improve performance at the cost of additional HTTP connections. |
 | `bucket` | String | Optionally specify the S3 bucket where the record is stored.  This is usually set in the class constructor. |
@@ -683,6 +724,24 @@ catch(err) {
 }
 ```
 
+If you specify a `progress` function, it will be called periodically with an object containing `loaded` and `total` properties (both are byte counts).  Example use:
+
+```js
+try {
+	// move selected files
+	let { files } = await s3.deleteFiles({ 
+		remotePath: 's3dir/uploadedimages', 
+		
+		progress: function(progress) {
+			console.log( `Deleted ${progress.loaded} of ${progress.total} bytes.` );
+		}
+	});
+}
+catch(err) {
+	// handle error here
+}
+```
+
 ### uploadFile
 
 The `uploadFile()` method uploads a file from the local filesystem to an object in S3.  This uses streams and multi-part chunks internally, so it can handle files of any size while using very little memory.  Example:
@@ -703,7 +762,8 @@ The method accepts an object containing the following properties:
 |---------------|------|-------------|
 | `localFile` | String | **(Required)** A path to the file on local disk. |
 | `key` | String | **(Required)** The S3 key of the object.  This may be prepended with a `prefix` if set on the class instance. |
-| `compress` | Boolean | Set this to `true` to automatically compress the file during upload.  Defaults to `false`.  See [Compression](https://github.com/jhuckaby/s3-api/blob/main/README.md#compression). |
+| `compress` | Boolean | Set this to `true` to automatically gzip-compress the file during upload.  Defaults to `false`.  See [Compression](https://github.com/jhuckaby/s3-api/blob/main/README.md#compression). |
+| `progress` | Function | Optionally provide a progress function, which will be called periodically during the operation.  See below for usage. |
 | `bucket` | String | Optionally specify the S3 bucket where the record is stored.  This is usually set in the class constructor. |
 | `params` | Object | Optionally specify parameters to the S3 API, for e.g. ACL and Storage Class.  See [Custom S3 Params](https://github.com/jhuckaby/s3-api/blob/main/README.md#custom-s3-params). |
 
@@ -712,6 +772,25 @@ The response object will contain the following keys, which you can destruct into
 | Property Name | Type | Description |
 |---------------|------|-------------|
 | `meta` | Object | A raw metadata object that is sent back from the AWS S3 service.  It contains information about the request, used for debugging and troubleshooting purposes. |
+
+If you specify a `progress` function, it will be called periodically with an object containing `loaded` and `total` properties (both are byte counts).  Example use:
+
+```js
+try {
+	// upload file
+	let { meta } = await s3.uploadFile({ 
+		localFile: '/path/to/image.gif', 
+		key: 's3dir/myfile.gif',
+		
+		progress: function(progress) {
+			console.log( `Uploaded ${progress.loaded} of ${progress.total} bytes.` );
+		}
+	});
+}
+catch(err) {
+	// handle error here
+}
+```
 
 Note that you can omit the filename portion of the `key` property if you want.  Specifically, if the `key` ends with a slash (`/`) this will trigger the library to automatically append the local filename to the end of the S3 key.
 
@@ -739,8 +818,9 @@ The method accepts an object containing the following properties:
 | `filter` | Function | Optionally provide a function to decide whether or not to include each file.  See below for usage. |
 | `all` | Boolean | Optionally include dotfiles (filenames that begin with a period) in the upload (the default is to skip them). |
 | `threads` | Integer | Optionally increase the threads to improve performance.  Defaults to `1`. |
-| `compress` | Boolean | Set this to `true` to automatically compress all files during upload.  Defaults to `false`.  See [Compression](https://github.com/jhuckaby/s3-api/blob/main/README.md#compression). |
+| `compress` | Boolean | Set this to `true` to automatically gzip-compress all files during upload.  Defaults to `false`.  See [Compression](https://github.com/jhuckaby/s3-api/blob/main/README.md#compression). |
 | `suffix` | String | Optionally append a suffix to every destination S3 key, e.g. `.gz` for compressed files. |
+| `progress` | Function | Optionally provide a progress function, which will be called periodically during the operation.  See below for usage. |
 | `bucket` | String | Optionally specify the S3 bucket where the files should be uploaded.  This is usually set in the class constructor. |
 | `params` | Object | Optionally specify parameters to the S3 API, for e.g. ACL and Storage Class.  See [Custom S3 Params](https://github.com/jhuckaby/s3-api/blob/main/README.md#custom-s3-params). |
 
@@ -770,6 +850,25 @@ catch(err) {
 }
 ```
 
+If you specify a `progress` function, it will be called periodically with an object containing `loaded` and `total` properties (both are byte counts).  Example use:
+
+```js
+try {
+	// upload selected files
+	let { files } = await s3.uploadFiles({ 
+		localPath: '/path/to/images', 
+		remotePath: 's3dir/uploadedimages', 
+		
+		progress: function(progress) {
+			console.log( `Uploaded ${progress.loaded} of ${progress.total} bytes.` );
+		}
+	});
+}
+catch(err) {
+	// handle error here
+}
+```
+
 ### downloadFile
 
 The `downloadFile()` method downloads an object from S3, and saves it to a local file on disk.  The local file's parent directories will be automatically created if needed.  This uses streams internally, so it can handle files of any size while using very little memory.  Example:
@@ -791,6 +890,7 @@ The method accepts an object containing the following properties:
 | `key` | String | **(Required)** The S3 key of the object to download.  This may be prepended with a `prefix` if set on the class instance. |
 | `localFile` | String | **(Required)** A path to the destination file on local disk. |
 | `decompress` | Boolean | Set this to `true` to automatically decompress the file during download.  Defaults to `false`.  See [Compression](https://github.com/jhuckaby/s3-api/blob/main/README.md#compression). |
+| `progress` | Function | Optionally provide a progress function, which will be called periodically during the operation.  See below for usage. |
 | `bucket` | String | Optionally specify the S3 bucket where the record is stored.  This is usually set in the class constructor. |
 
 The response object will contain the following keys, which you can destruct into variables as shown above:
@@ -798,6 +898,25 @@ The response object will contain the following keys, which you can destruct into
 | Property Name | Type | Description |
 |---------------|------|-------------|
 | `meta` | Object | A raw metadata object that is sent back from the AWS S3 service.  It contains information about the request, used for debugging and troubleshooting purposes. |
+
+If you specify a `progress` function, it will be called periodically with an object containing `loaded` and `total` properties (both are byte counts).  Example use:
+
+```js
+try {
+	// download file
+	let { meta } = await s3.downloadFile({ 
+		key: 's3dir/myfile.gif',
+		localFile: '/path/to/image.gif', 
+		
+		progress: function(progress) {
+			console.log( `Downloaded ${progress.loaded} of ${progress.total} bytes.` );
+		}
+	});
+}
+catch(err) {
+	// handle error here
+}
+```
 
 Note that you can omit the filename portion of the `localFile` property if you want.  Specifically, if the `localFile` ends with a slash (`/`) this will trigger the library to automatically append the filename from the S3 key.
 
@@ -826,6 +945,7 @@ The method accepts an object containing the following properties:
 | `threads` | Integer | Optionally increase the threads to improve performance.  Defaults to `1`. |
 | `decompress` | Boolean | Set this to `true` to automatically decompress all files during download.  Defaults to `false`.  See [Compression](https://github.com/jhuckaby/s3-api/blob/main/README.md#compression). |
 | `strip` | RegExp | Optionally strip a suffix from every destination filename, e.g. `/\.gz$/` to strip the `.gz` suffix off compressed files. |
+| `progress` | Function | Optionally provide a progress function, which will be called periodically during the operation.  See below for usage. |
 | `bucket` | String | Optionally specify the S3 bucket where the files are stored.  This is usually set in the class constructor. |
 
 The response object will contain the following keys, which you can destruct into variables as shown above:
@@ -847,6 +967,25 @@ try {
 		filter: function(file) {
 			// only download large files 1MB+
 			return file.size > 1024 * 1024;
+		}
+	});
+}
+catch(err) {
+	// handle error here
+}
+```
+
+If you specify a `progress` function, it will be called periodically with an object containing `loaded` and `total` properties (both are byte counts).  Example use:
+
+```js
+try {
+	// download selected files
+	let { files } = await s3.downloadFiles({ 
+		remotePath: 's3dir/uploadedimages', 
+		localPath: '/path/to/images', 
+		
+		progress: function(progress) {
+			console.log( `Downloaded ${progress.loaded} of ${progress.total} bytes.` );
 		}
 	});
 }
@@ -877,7 +1016,8 @@ The method accepts an object containing the following properties:
 |---------------|------|-------------|
 | `key` | String | **(Required)** The S3 key to store the object under.  This may be prepended with a `prefix` if set on the class instance. |
 | `value` | Buffer | **(Required)** The buffer value to store. |
-| `compress` | Boolean | Set this to `true` to automatically compress the buffer during upload.  Defaults to `false`.  See [Compression](https://github.com/jhuckaby/s3-api/blob/main/README.md#compression). |
+| `compress` | Boolean | Set this to `true` to automatically gzip-compress the buffer during upload.  Defaults to `false`.  See [Compression](https://github.com/jhuckaby/s3-api/blob/main/README.md#compression). |
+| `progress` | Function | Optionally provide a progress function, which will be called periodically during the operation.  See below for usage. |
 | `bucket` | String | Optionally override the S3 bucket used to store the record.  This is usually set in the class constructor. |
 | `params` | Object | Optionally specify parameters to the S3 API, for e.g. ACL and Storage Class.  See [Custom S3 Params](https://github.com/jhuckaby/s3-api/blob/main/README.md#custom-s3-params). |
 
@@ -886,6 +1026,27 @@ The response object will contain the following keys, which you can destruct into
 | Property Name | Type | Description |
 |---------------|------|-------------|
 | `meta` | Object | A raw metadata object that is sent back from the AWS S3 service.  It contains information about the request, used for debugging and troubleshooting purposes. |
+
+If you specify a `progress` function, it will be called periodically with an object containing `loaded` and `total` properties (both are byte counts).  Example use:
+
+```js
+let buf = fs.readFileSync( '/path/to/image.gif' );
+
+try {
+	// upload buffer
+	let { meta } = await s3.putBuffer({ 
+		key: 's3dir/myfile.gif', 
+		value: buf,
+		
+		progress: function(progress) {
+			console.log( `Sent ${progress.loaded} of ${progress.total} bytes.` );
+		}
+	});
+}
+catch (err) {
+	// handle error here
+}
+```
 
 ### getBuffer
 
@@ -907,6 +1068,7 @@ The method accepts an object containing the following properties:
 |---------------|------|-------------|
 | `key` | String | **(Required)** The S3 key of the object you want to get.  This may be prepended with a `prefix` if set on the class instance. |
 | `decompress` | Boolean | Set this to `true` to automatically decompress the buffer during download.  Defaults to `false`.  See [Compression](https://github.com/jhuckaby/s3-api/blob/main/README.md#compression). |
+| `progress` | Function | Optionally provide a progress function, which will be called periodically during the operation.  See below for usage. |
 | `bucket` | String | Optionally specify the S3 bucket where the record is stored.  This is usually set in the class constructor. |
 
 The response object will contain the following keys, which you can destruct into variables as shown above:
@@ -915,6 +1077,24 @@ The response object will contain the following keys, which you can destruct into
 |---------------|------|-------------|
 | `data` | Buffer | The content of the S3 record, in buffer format. |
 | `meta` | Object | A raw metadata object that is sent back from the AWS S3 service.  It contains information about the request, used for debugging and troubleshooting purposes. |
+
+If you specify a `progress` function, it will be called periodically with an object containing `loaded` and `total` properties (both are byte counts).  Example use:
+
+```js
+try {
+	// download buffer
+	let { data } = await s3.getBuffer({ 
+		key: 's3dir/myfile.gif',
+		
+		progress: function(progress) {
+			console.log( `Received ${progress.loaded} of ${progress.total} bytes.` );
+		}
+	});
+}
+catch (err) {
+	// handle error here
+}
+```
 
 ### putStream
 
@@ -938,7 +1118,8 @@ The method accepts an object containing the following properties:
 |---------------|------|-------------|
 | `key` | String | **(Required)** The S3 key to store the object under.  This may be prepended with a `prefix` if set on the class instance. |
 | `value` | Stream | **(Required)** The Node.js stream to upload. |
-| `compress` | Boolean | Set this to `true` to automatically compress the stream during upload.  Defaults to `false`.  See [Compression](https://github.com/jhuckaby/s3-api/blob/main/README.md#compression). |
+| `compress` | Boolean | Set this to `true` to automatically gzip-compress the stream during upload.  Defaults to `false`.  See [Compression](https://github.com/jhuckaby/s3-api/blob/main/README.md#compression). |
+| `progress` | Function | Optionally provide a progress function, which will be called periodically during the operation.  See below for usage. |
 | `bucket` | String | Optionally override the S3 bucket used to store the record.  This is usually set in the class constructor. |
 | `params` | Object | Optionally specify parameters to the S3 API, for e.g. ACL and Storage Class.  See [Custom S3 Params](https://github.com/jhuckaby/s3-api/blob/main/README.md#custom-s3-params). |
 
@@ -947,6 +1128,27 @@ The response object will contain the following keys, which you can destruct into
 | Property Name | Type | Description |
 |---------------|------|-------------|
 | `meta` | Object | A raw metadata object that is sent back from the AWS S3 service.  It contains information about the request, used for debugging and troubleshooting purposes. |
+
+If you specify a `progress` function, it will be called periodically with an object containing `loaded` and `total` properties (both are byte counts).  Example use:
+
+```js
+let readStream = fs.createReadStream( '/path/to/image.gif' );
+
+try {
+	// upload stream to S3
+	await s3.putStream({ 
+		key: 's3dir/myfile.gif', 
+		value: readStream,
+		
+		progress: function(progress) {
+			console.log( `Sent ${progress.loaded} of ${progress.total} bytes.` );
+		}
+	});
+}
+catch (err) {
+	// handle error here
+}
+```
 
 ### getStream
 
@@ -977,6 +1179,7 @@ The method accepts an object containing the following properties:
 |---------------|------|-------------|
 | `key` | String | **(Required)** The S3 key of the object you want to get.  This may be prepended with a `prefix` if set on the class instance. |
 | `decompress` | Boolean | Set this to `true` to automatically decompress the stream during download.  Defaults to `false`.  See [Compression](https://github.com/jhuckaby/s3-api/blob/main/README.md#compression). |
+| `progress` | Function | Optionally provide a progress function, which will be called periodically during the operation.  See below for usage. |
 | `bucket` | String | Optionally specify the S3 bucket where the record is stored.  This is usually set in the class constructor. |
 
 The response object will contain the following keys, which you can destruct into variables as shown above:
@@ -985,3 +1188,30 @@ The response object will contain the following keys, which you can destruct into
 |---------------|------|-------------|
 | `data` | Stream | The stream of the S3 contents, ready for piping. |
 | `meta` | Object | A raw metadata object that is sent back from the AWS S3 service.  It contains information about the request, used for debugging and troubleshooting purposes. |
+
+If you specify a `progress` function, it will be called periodically with an object containing `loaded` and `total` properties (both are byte counts).  Example use:
+
+```js
+let writeStream = fs.createWriteStream( '/path/to/image.gif' );
+
+try {
+	// start stream from S3
+	let { data } = await s3.getStream({ 
+		key: 's3dir/myfile.gif',
+		
+		progress: function(progress) {
+			console.log( `Received ${progress.loaded} of ${progress.total} bytes.` );
+		}
+	});
+	
+	// pipe it to local file
+	data.pipe( writeStream );
+	
+	writeStream.on('finish', function() {
+		// download complete
+	});
+}
+catch (err) {
+	// handle error here
+}
+```
