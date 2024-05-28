@@ -15,6 +15,7 @@ The **s3-api** module provides a simple, light wrapper around the AWS S3 API (ve
 - Automatic retries with exponential backoff.
 - Logging and perf helpers.
 - Optional caching layer for JSON files.
+- Progress callback for most API calls.
 - Full-featured command-line interface (CLI).
 
 ## Table of Contents
