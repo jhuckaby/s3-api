@@ -606,6 +606,7 @@ The `upload` command accepts the following optional arguments:
 | `params` | Object | Optionally pass custom parameters directly to the AWS API.  See [S3 Params](#s3-params). |
 | `compress` | Boolean | Optionally compress the file as it is being uploaded using gzip. |
 | `gzip` | Object | Control the gzip compression settings.  See [Compression](#compression). |
+| `delete` | Boolean | Optionally delete the source file after upload is complete. |
 
 ### uploadFiles
 
@@ -635,6 +636,7 @@ The `uploadFiles` command accepts the following optional arguments:
 | `compress` | Boolean | Automatically compress all files using gzip during upload.  Disabled by default. |
 | `gzip` | Object | Control the gzip compression settings.  See [Compression](#compression). |
 | `suffix` | String | Optionally append a suffix to every destination S3 key, e.g. `.gz` for compressed files. |
+| `delete` | Boolean | Optionally delete the source files after upload is complete. |
 | `params` | Object | Optionally specify parameters to the S3 API, for e.g. ACL and Storage Class.  See [S3 Params](#s3-params). |
 
 **Notes:**
@@ -662,6 +664,7 @@ The `download` command accepts the following optional arguments:
 |---------------|------|-------------|
 | `recursive` (`r`) | Boolean | Switch to recursive mode, i.e. call [downloadFiles](#downloadfiles) instead. |
 | `decompress` | Boolean | Automatically decompress file using gunzip during download. |
+| `delete` | Boolean | Optionally delete the S3 file after download is complete. |
 
 ### downloadFiles
 
@@ -689,6 +692,7 @@ The `downloadFiles` command accepts the following optional arguments:
 | `threads` | Integer | Optionally increase concurrency to improve performance.  Defaults to `1` thread. |
 | `decompress` | Boolean | Automatically decompress all files using gunzip during upload.  Disabled by default. |
 | `strip` | RegExp | Optionally strip a suffix from every destination filename, e.g. `\.gz$` to strip the `.gz` suffix off of compressed files. |
+| `delete` | Boolean | Optionally delete the S3 files after download is complete. |
 
 **Notes:**
 

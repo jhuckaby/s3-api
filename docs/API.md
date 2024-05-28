@@ -846,6 +846,7 @@ The method accepts an object containing the following properties:
 | `key` | String | **(Required)** The S3 key of the object.  This may be prepended with a `prefix` if set on the class instance. |
 | `compress` | Boolean | Set this to `true` to automatically gzip-compress the file during upload.  Defaults to `false`.  See [Compression](https://github.com/jhuckaby/s3-api/blob/main/README.md#compression). |
 | `progress` | Function | Optionally provide a progress function, which will be called periodically during the operation.  See below for usage. |
+| `delete` | Boolean | Optionally delete the source file after upload is complete. |
 | `bucket` | String | Optionally specify the S3 bucket where the record is stored.  This is usually set in the class constructor. |
 | `params` | Object | Optionally specify parameters to the S3 API, for e.g. ACL and Storage Class.  See [Custom S3 Params](https://github.com/jhuckaby/s3-api/blob/main/README.md#custom-s3-params). |
 
@@ -909,6 +910,7 @@ The method accepts an object containing the following properties:
 | `compress` | Boolean | Set this to `true` to automatically gzip-compress all files during upload.  Defaults to `false`.  See [Compression](https://github.com/jhuckaby/s3-api/blob/main/README.md#compression). |
 | `suffix` | String | Optionally append a suffix to every destination S3 key, e.g. `.gz` for compressed files. |
 | `progress` | Function | Optionally provide a progress function, which will be called periodically during the operation.  See below for usage. |
+| `delete` | Boolean | Optionally delete the source files after upload is complete. |
 | `bucket` | String | Optionally specify the S3 bucket where the files should be uploaded.  This is usually set in the class constructor. |
 | `params` | Object | Optionally specify parameters to the S3 API, for e.g. ACL and Storage Class.  See [Custom S3 Params](https://github.com/jhuckaby/s3-api/blob/main/README.md#custom-s3-params). |
 
@@ -986,6 +988,7 @@ The method accepts an object containing the following properties:
 | `localFile` | String | **(Required)** A path to the destination file on local disk. |
 | `decompress` | Boolean | Set this to `true` to automatically decompress the file during download.  Defaults to `false`.  See [Compression](https://github.com/jhuckaby/s3-api/blob/main/README.md#compression). |
 | `progress` | Function | Optionally provide a progress function, which will be called periodically during the operation.  See below for usage. |
+| `delete` | Boolean | Optionally delete the S3 file after download is complete. |
 | `bucket` | String | Optionally specify the S3 bucket where the record is stored.  This is usually set in the class constructor. |
 
 The response object will contain the following keys, which you can destruct into variables as shown above:
@@ -1047,6 +1050,7 @@ The method accepts an object containing the following properties:
 | `decompress` | Boolean | Set this to `true` to automatically decompress all files during download.  Defaults to `false`.  See [Compression](https://github.com/jhuckaby/s3-api/blob/main/README.md#compression). |
 | `strip` | RegExp | Optionally strip a suffix from every destination filename, e.g. `/\.gz$/` to strip the `.gz` suffix off compressed files. |
 | `progress` | Function | Optionally provide a progress function, which will be called periodically during the operation.  See below for usage. |
+| `delete` | Boolean | Optionally delete the S3 files after download is complete. |
 | `bucket` | String | Optionally specify the S3 bucket where the files are stored.  This is usually set in the class constructor. |
 
 The response object will contain the following keys, which you can destruct into variables as shown above:

@@ -78,6 +78,8 @@ let cmd = args.other.shift();
 
 const S3 = require('.');
 
+const S3_URL_RE = /^(s3:\/\/|s3:|\/\/)([^\/]+)\/(.*)$/i;
+
 const CMD_HELP_TEXT = {
 	docs: `s3 docs`,
 	
@@ -301,11 +303,9 @@ const app = {
 		let spec = args.other.shift() || null;
 		if (!spec) return false;
 		
-		if (spec.match(/^(s3:\/\/|s3:|\/\/)([^\/]+)\/(.*)$/i)) {
+		if (spec.match(S3_URL_RE)) {
 			args[bucket_name] = RegExp.$2;
 			args[key_name] = RegExp.$3;
-			
-			// println( gray.bold("S3: ") + gray( args.bucket ) + gray(" (" + this.s3.region + ")") );
 			return true;
 		}
 		else return false;
@@ -383,7 +383,7 @@ const app = {
 	
 	printArgSummary() {
 		// print list of args
-		println( gray(JSON.stringify( { endpoint: this.s3.endpoint || undefined, region: this.s3.region, ...args } )) + "\n" );
+		println( gray(JSON.stringify( { command: cmd, endpoint: this.s3.endpoint || undefined, region: this.s3.region, ...args } )) + "\n" );
 	},
 	
 	async callS3API(cmd) {
@@ -763,6 +763,18 @@ const app = {
 		// copy file
 		// s3 copy s3://my-bucket/users/oldkermit.json s3://my-bucket/users/newkermit.json
 		
+		// allow copy to jump over to upload / download as needed
+		if (args.other && (args.other.length >= 2)) {
+			if (args.other[0].match(S3_URL_RE) && !args.other[1].match(S3_URL_RE)) {
+				cmd = this.cmd = 'download';
+				return await this.cmd_download();
+			}
+			else if (!args.other[0].match(S3_URL_RE) && args.other[1].match(S3_URL_RE)) {
+				cmd = this.cmd = 'upload';
+				return await this.cmd_upload();
+			}
+		}
+		
 		// allow --recursive to jump over to copyFiles
 		if (args.recursive) {
 			delete args.recursive;
@@ -802,6 +814,20 @@ const app = {
 	async cmd_move() {
 		// move file
 		// s3 move s3://my-bucket/users/oldkermit.json s3://my-bucket/users/newkermit.json
+		
+		// allow move to jump over to upload / download (with delete) as needed
+		if (args.other && (args.other.length >= 2)) {
+			if (args.other[0].match(S3_URL_RE) && !args.other[1].match(S3_URL_RE)) {
+				args.delete = true;
+				cmd = this.cmd = 'download';
+				return await this.cmd_download();
+			}
+			else if (!args.other[0].match(S3_URL_RE) && args.other[1].match(S3_URL_RE)) {
+				args.delete = true;
+				cmd = this.cmd = 'upload';
+				return await this.cmd_upload();
+			}
+		}
 		
 		// allow --recursive to jump over to moveFiles
 		if (args.recursive) {

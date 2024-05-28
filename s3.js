@@ -856,6 +856,7 @@ class S3API {
 	 * @param {Object} [opts.params] - Optionally specify parameters to the S3 API, for e.g. ACL and Storage Class. 
 	 * @param {boolean} [opts.compress=false] - Optionally compress the file during upload.
 	 * @param {Function} [opts.progress] - A function to receive progress udpates.
+	 * @param {boolean} [opts.delete=false] - Optionally delete source file after upload is complete.
 	 * @param {boolean} [opts.dry=false] - Optionally do a dry run (take no action).
 	 * @returns {Promise<MetaResponse>} - A promise that resolves to a custom object.
 	 */
@@ -881,7 +882,7 @@ class S3API {
 				return callback(err);
 			}
 			
-			self.logDebug(8, "Uploading file: " + opts.key + " to: " + opts.key, { file: opts.localFile, key: opts.key, size: stats.size });
+			self.logDebug(8, "Uploading file: " + opts.localFile + " to: " + opts.key, { file: opts.localFile, key: opts.key, size: stats.size });
 			
 			if (opts.dry) {
 				self.logDebug(9, "Dry-run, returning faux success");
@@ -891,7 +892,24 @@ class S3API {
 			// streamize
 			opts.value = fs.createReadStream(opts.localFile);
 			
-			self.putStream(opts, callback);
+			self.putStream(opts, function(err, meta) {
+				if (err) return callback(err);
+				
+				let finish = function() {
+					self.logDebug(9, "Upload complete: " + opts.key, opts.localFile);
+					callback( null, meta );
+				};
+				
+				// optionally delete source file
+				if (opts.delete) {
+					self.logDebug(8, "Deleting source file: " + opts.localFile);
+					fs.unlink( opts.localFile, function(err) {
+						if (err) return callback(err);
+						finish();
+					} );
+				}
+				else finish();
+			}); // putStream
 		}); // fs.stat
 	}
 	
@@ -903,6 +921,7 @@ class S3API {
 	 * @param {string} [opts.bucket] - Optionally override the S3 bucket.
 	 * @param {boolean} [opts.decompress=false] - Optionally decompress the file during download.
 	 * @param {Function} [opts.progress] - A function to receive progress udpates.
+	 * @param {boolean} [opts.delete=false] - Optionally delete S3 file after download is complete.
 	 * @param {boolean} [opts.dry=false] - Optionally do a dry run (take no action).
 	 * @returns {Promise<MetaResponse>} - A promise that resolves to a custom object.
 	 */
@@ -935,6 +954,11 @@ class S3API {
 				let tracker = self.perf ? self.perf.begin('s3_get') : null;
 				let outp = fs.createWriteStream(opts.localFile);
 				
+				let finish = function() {
+					self.logDebug(9, "Download complete: " + opts.localFile, opts.key);
+					callback( null, meta );
+				};
+				
 				inp.on('error', function(err) {
 					if (done) return; else done = true;
 					if (tracker) tracker.end();
@@ -952,9 +976,15 @@ class S3API {
 				outp.on('finish', function() {
 					if (done) return; else done = true;
 					if (tracker) tracker.end();
-					self.logDebug(9, "Download complete: " + opts.key, opts.localFile);
-					self.logDebug(9, "File written: " + opts.localFile);
-					callback( null, meta );
+					
+					// optionally delete source s3 file
+					if (opts.delete) {
+						self.deleteFile(opts, function(err) {
+							if (err) return callback(err);
+							finish();
+						});
+					}
+					else finish();
 				});
 				
 				inp.pipe(outp);
