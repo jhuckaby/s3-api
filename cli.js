@@ -772,7 +772,7 @@ const app = {
 		
 		this.shiftS3Spec('sourceBucket', 'sourceKey') || this.dieUsage(this.cmd);
 		this.shiftS3Spec('bucket', 'key') || this.dieUsage(this.cmd);
-		await this.callS3API(this.cmd);
+		await this.callS3API('copyFile');
 	},
 	
 	async cmd_cp() {
@@ -812,7 +812,7 @@ const app = {
 		
 		this.shiftS3Spec('sourceBucket', 'sourceKey') || this.dieUsage(this.cmd);
 		this.shiftS3Spec('bucket', 'key') || this.dieUsage(this.cmd);
-		await this.callS3API(this.cmd);
+		await this.callS3API('moveFile');
 	},
 	
 	async cmd_mv() {
@@ -851,7 +851,7 @@ const app = {
 		}
 		
 		this.shiftS3Spec('bucket', 'key') || this.dieUsage(this.cmd);
-		await this.callS3API(this.cmd);
+		await this.callS3API('deleteFile');
 	},
 	
 	async cmd_rm() {

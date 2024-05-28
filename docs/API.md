@@ -19,11 +19,11 @@ This document contains a complete API reference for **s3-api**.
 	* [listFolders](#listfolders)
 	* [listBuckets](#listbuckets)
 	* [walk](#walk)
-	* [copy](#copy)
+	* [copyFile](#copyfile)
 	* [copyFiles](#copyfiles)
-	* [move](#move)
+	* [moveFile](#movefile)
 	* [moveFiles](#movefiles)
-	* [delete](#delete)
+	* [deleteFile](#deletefile)
 	* [deleteFiles](#deletefiles)
 	* [uploadFile](#uploadfile)
 	* [uploadFiles](#uploadfiles)
@@ -438,14 +438,14 @@ Each item object passed to the iterator will contain the following properties:
 
 - Always include a trailing slash when specifying directories.
 
-### copy
+### copyFile
 
-The `copy()` method copies one S3 object to another S3 location.  This API can copy between buckets as well.  Example:
+The `copyFile()` method copies one S3 object to another S3 location.  This API can copy between buckets as well.  Example:
 
 ```js
 try {
 	// copy an object
-	let { meta } = await s3.copy({ 
+	let { meta } = await s3.copyFile({ 
 		sourceKey: 'users/oldkermit.json', 
 		key: 'users/newkermit.json' 
 	});
@@ -455,12 +455,12 @@ catch(err) {
 }
 ```
 
-To copy an object between buckets, include a `sourceBucket` property.  The destination bucket is always specified via `bucket` (which may be set on your class instance or in the copy API).  Example:
+To copy an object between buckets, include a `sourceBucket` property.  The destination bucket is always specified via `bucket` (which may be set on your class instance or in the copyFile API).  Example:
 
 ```js
 try {
 	// copy an object between buckets
-	let { meta } = await s3.copy({ 
+	let { meta } = await s3.copyFile({ 
 		sourceBucket: 'oldbucket', 
 		sourceKey: 'users/oldkermit.json', 
 		bucket: 'newbucket', 
@@ -575,14 +575,14 @@ catch(err) {
 - Always include a trailing slash when specifying directories.
 - The AWS SDK does not preserve metadata, such as ACL and storage class, when copying objects.
 
-### move
+### moveFile
 
-The `move()` method moves one S3 object to another S3 location.  Essentially, it performs a [copy()](#copy) followed by a [delete()](#delete).  This can move objects between buckets as well.  Example:
+The `moveFile()` method moves one S3 object to another S3 location.  Essentially, it performs a [copyFile()](#copyfile) followed by a [deleteFile()](#deletefile).  This can move objects between buckets as well.  Example:
 
 ```js
 try {
 	// move an object
-	let { meta } = await s3.move({ 
+	let { meta } = await s3.moveFile({ 
 		sourceKey: 'users/oldkermit', 
 		key: 'users/newkermit' 
 	});
@@ -592,12 +592,12 @@ catch(err) {
 }
 ```
 
-To move an object between buckets, use `sourceBucket`.  The destination bucket is always specified via `bucket` (which may be set on your class instance or in the copy API).  Example:
+To move an object between buckets, use `sourceBucket`.  The destination bucket is always specified via `bucket` (which may be set on your class instance or in the moveFile API).  Example:
 
 ```js
 try {
 	// move an object between buckets
-	let { meta } = await s3.move({ 
+	let { meta } = await s3.moveFile({ 
 		sourceBucket: 'oldbucket', 
 		sourceKey: 'users/oldkermit', 
 		bucket: 'newbucket', 
@@ -712,14 +712,14 @@ catch(err) {
 - Always include a trailing slash when specifying directories.
 - The AWS SDK does not preserve metadata, such as ACL and storage class, when moving objects.
 
-### delete
+### deleteFile
 
-The `delete()` method deletes a single object from S3 given its key.  Please use caution here, as there is no way to undo a delete (unless you use versioned buckets I suppose).  Example:
+The `deleteFile()` method deletes a single object from S3 given its key.  Please use caution here, as there is no way to undo a delete (unless you use versioned buckets I suppose).  Example:
 
 ```js
 try {
 	// delete a remote object
-	let { meta } = await s3.delete({ key: 's3dir/myfile.gif' });
+	let { meta } = await s3.deleteFile({ key: 's3dir/myfile.gif' });
 }
 catch (err) {
 	// handle error here
@@ -802,7 +802,7 @@ If you specify a `progress` function, it will be called periodically with an obj
 
 ```js
 try {
-	// move selected files
+	// delete selected files
 	let { files } = await s3.deleteFiles({ 
 		remotePath: 's3dir/uploadedimages/', 
 		

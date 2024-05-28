@@ -94,7 +94,7 @@ exports.tests = [
 	},
 	
 	async function testCopyObject(test) {
-		let { meta } = await s3.copy({ sourceKey: 'test1.json', key: 'test2.json' });
+		let { meta } = await s3.copyFile({ sourceKey: 'test1.json', key: 'test2.json' });
 		
 		test.ok( !!meta, "meta is defined" );
 		test.ok( !!meta.$metadata, "meta.$metadata is defined" );
@@ -132,7 +132,7 @@ exports.tests = [
 	},
 	
 	async function testMoveObject(test) {
-		let { meta } = await s3.move({ sourceKey: 'test2.json', key: 'test3.json' });
+		let { meta } = await s3.moveFile({ sourceKey: 'test2.json', key: 'test3.json' });
 		
 		test.ok( !!meta, "meta is defined" );
 		test.ok( !!meta.$metadata, "meta.$metadata is defined" );
@@ -156,7 +156,7 @@ exports.tests = [
 	},
 	
 	async function testDeleteCopiedMovedRecord(test) {
-		let { meta } = await s3.delete({ key: 'test3.json' });
+		let { meta } = await s3.deleteFile({ key: 'test3.json' });
 		test.ok( !!meta, "meta is defined" );
 		test.ok( !!meta.$metadata, "meta.$metadata is defined" );
 		test.ok( meta.$metadata.httpStatusCode >= 200 && meta.$metadata.httpStatusCode <= 299, "meta.$metadata.httpStatusCode expected to be 2xx, got: " + meta.$metadata.httpStatusCode );
@@ -378,7 +378,7 @@ exports.tests = [
 	async function testDeleteNotFoundError(test) {
 		let err = null;
 		try { 
-			await s3.delete({ key: 'noexist.blah' });
+			await s3.deleteFile({ key: 'noexist.blah' });
 		}
 		catch(e) {
 			err = e;
@@ -403,7 +403,7 @@ exports.tests = [
 	},
 	
 	async function testDeleteCompressedFile(test) {
-		let { meta } = await s3.delete({ key: 'spacer.gif.gz' });
+		let { meta } = await s3.deleteFile({ key: 'spacer.gif.gz' });
 		test.ok( !!meta, "meta is defined" );
 		test.ok( !!meta.$metadata, "meta.$metadata is defined" );
 		test.ok( meta.$metadata.httpStatusCode >= 200 && meta.$metadata.httpStatusCode <= 299, "meta.$metadata.httpStatusCode expected to be 2xx, got: " + meta.$metadata.httpStatusCode );
@@ -411,7 +411,7 @@ exports.tests = [
 	},
 	
 	async function testDeleteFile(test) {
-		let { meta } = await s3.delete({ key: 'spacer.gif' });
+		let { meta } = await s3.deleteFile({ key: 'spacer.gif' });
 		test.ok( !!meta, "meta is defined" );
 		test.ok( !!meta.$metadata, "meta.$metadata is defined" );
 		test.ok( meta.$metadata.httpStatusCode >= 200 && meta.$metadata.httpStatusCode <= 299, "meta.$metadata.httpStatusCode expected to be 2xx, got: " + meta.$metadata.httpStatusCode );
@@ -419,7 +419,7 @@ exports.tests = [
 	},
 	
 	async function testDeleteStream(test) {
-		let { meta } = await s3.delete({ key: 'stream.bin' });
+		let { meta } = await s3.deleteFile({ key: 'stream.bin' });
 		test.ok( !!meta, "meta is defined" );
 		test.ok( !!meta.$metadata, "meta.$metadata is defined" );
 		test.ok( meta.$metadata.httpStatusCode >= 200 && meta.$metadata.httpStatusCode <= 299, "meta.$metadata.httpStatusCode expected to be 2xx, got: " + meta.$metadata.httpStatusCode );
@@ -427,7 +427,7 @@ exports.tests = [
 	},
 	
 	async function testDeleteBuffer(test) {
-		let { meta } = await s3.delete({ key: 'buf.bin' });
+		let { meta } = await s3.deleteFile({ key: 'buf.bin' });
 		test.ok( !!meta, "meta is defined" );
 		test.ok( !!meta.$metadata, "meta.$metadata is defined" );
 		test.ok( meta.$metadata.httpStatusCode >= 200 && meta.$metadata.httpStatusCode <= 299, "meta.$metadata.httpStatusCode expected to be 2xx, got: " + meta.$metadata.httpStatusCode );
@@ -435,7 +435,7 @@ exports.tests = [
 	},
 	
 	async function testDeleteJSON(test) {
-		let { meta } = await s3.delete({ key: 'test1.json' });
+		let { meta } = await s3.deleteFile({ key: 'test1.json' });
 		test.ok( !!meta, "meta is defined" );
 		test.ok( !!meta.$metadata, "meta.$metadata is defined" );
 		test.ok( meta.$metadata.httpStatusCode >= 200 && meta.$metadata.httpStatusCode <= 299, "meta.$metadata.httpStatusCode expected to be 2xx, got: " + meta.$metadata.httpStatusCode );

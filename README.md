@@ -635,8 +635,8 @@ It will track the following performance metrics for you:
 | `s3_get` | Measures all S3 download operations, including [get()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#get), [downloadFile()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#downloadfile), [downloadFiles()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#downloadfiles), [getBuffer()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#getbuffer) and [getStream()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#getstream)). |
 | `s3_head` | Measures all calls to [head()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#head). |
 | `s3_list` | Measures all calls to [list()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#list). |
-| `s3_copy` | Measures all calls to [copy()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#copy). |
-| `s3_delete` | Measures all calls to [delete()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#delete) and [deleteFiles()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#deletefiles). |
+| `s3_copy` | Measures all calls to [copyFile()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#copyfile). |
+| `s3_delete` | Measures all calls to [deleteFile()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#deletefile) and [deleteFiles()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#deletefiles). |
 
 ### Unit Tests
 

@@ -323,7 +323,7 @@ class S3API {
 	
 	/**
 	 * Copy a single object from one location to another.
-	 * @param {Object} opts - The options object for the copy operation.
+	 * @param {Object} opts - The options object for the copyFile operation.
 	 * @param {Object} opts.sourceKey - The S3 key to copy from.
 	 * @param {string} opts.key - The S3 key to copy the object to. 
 	 * @param {Object} [opts.sourceBucket] - Optionally override the S3 bucket used to read the source record.
@@ -332,7 +332,7 @@ class S3API {
 	 * @param {boolean} [opts.dry=false] - Optionally do a dry run (take no action).
 	 * @returns {Promise<MetaResponse>} - A promise that resolves to a custom object.
 	 */
-	copy(opts, callback) {
+	copyFile(opts, callback) {
 		// copy a single object from one location to another
 		// opts: { sourceBucket, sourceKey, bucket, key, params }
 		// result: { metadata }
@@ -417,7 +417,7 @@ class S3API {
 				function(file, callback) {
 					opts.sourceKey = file.key;
 					opts.key = opts.destPath + file.key.slice(self.prefix.length + opts.remotePath.length);
-					self.copy( opts, function(err) {
+					self.copyFile( opts, function(err) {
 						if (err) return callback(err);
 						
 						// update progress
@@ -425,7 +425,7 @@ class S3API {
 						progressHandler({ loaded, total });
 						
 						callback();
-					} ); // copy
+					} ); // copyFile
 				},
 				function(err) {
 					if (err) return callback(err, null, null);
@@ -438,26 +438,26 @@ class S3API {
 	
 	/**
 	 * Move a single object from one location to another.
-	 * @param {Object} opts - The options object for the move operation.
-	 * @param {Object} opts.sourceKey - The S3 key to copy from.
-	 * @param {string} opts.key - The S3 key to copy the object to. 
+	 * @param {Object} opts - The options object for the moveFile operation.
+	 * @param {Object} opts.sourceKey - The S3 key to move from.
+	 * @param {string} opts.key - The S3 key to move the object to. 
 	 * @param {Object} [opts.sourceBucket] - Optionally override the S3 bucket used to read the source record.
 	 * @param {string} [opts.bucket] - Optionally override the S3 bucket used to store the destination record.
 	 * @param {Object} [opts.params] - Optionally specify parameters to the S3 API, for e.g. ACL and Storage Class. 
 	 * @param {boolean} [opts.dry=false] - Optionally do a dry run (take no action).
 	 * @returns {Promise<MetaResponse>} - A promise that resolves to a custom object.
 	 */
-	move(opts, callback) {
+	moveFile(opts, callback) {
 		// move a single object from one location to another
 		// opts: { sourceBucket, sourceKey, bucket, key, params }
 		// result: { metadata }
 		let self = this;
 		
-		this.copy(opts, function(err) {
+		this.copyFile(opts, function(err) {
 			if (err) return callback(err);
 			
 			// now delete the source
-			self.delete( Tools.mergeHashes(opts, { bucket: opts.sourceBucket || self.bucket, key: opts.sourceKey }), callback);
+			self.deleteFile( Tools.mergeHashes(opts, { bucket: opts.sourceBucket || self.bucket, key: opts.sourceKey }), callback);
 		});
 	}
 	
@@ -500,7 +500,7 @@ class S3API {
 					opts.sourceKey = file.key;
 					opts.key = opts.destPath + file.key.slice(self.prefix.length + opts.remotePath.length);
 					
-					self.move( opts, function(err) {
+					self.moveFile( opts, function(err) {
 						if (err) return callback(err);
 						
 						// update progress
@@ -508,7 +508,7 @@ class S3API {
 						progressHandler({ loaded, total });
 						
 						callback();
-					} ); // move
+					} ); // moveFile
 				},
 				function(err) {
 					if (err) return callback(err, null, null);
@@ -799,7 +799,7 @@ class S3API {
 	 * @param {boolean} [opts.dry=false] - Optionally do a dry run (take no action).
 	 * @returns {Promise<MetaResponse>} - A promise that resolves to a custom object.
 	 */
-	delete(opts, callback) {
+	deleteFile(opts, callback) {
 		// delete s3 object
 		// opts: { bucket, key }
 		// result: { metadata }
@@ -1124,7 +1124,7 @@ class S3API {
 			
 			async.eachLimit( files, opts.threads || 1,
 				function(file, callback) {
-					self.delete( Tools.mergeHashes(opts, { key: file.key.slice(self.prefix.length) }), function(err) {
+					self.deleteFile( Tools.mergeHashes(opts, { key: file.key.slice(self.prefix.length) }), function(err) {
 						if (err) return callback(err);
 						
 						// update progress
@@ -1132,7 +1132,7 @@ class S3API {
 						progressHandler({ loaded, total });
 						
 						callback();
-					}); // delete
+					}); // deleteFile
 				},
 				function(err) {
 					if (err) return callback(err, null, null);
@@ -1442,11 +1442,11 @@ asyncify( S3API, {
 	listFolders: ['folders', 'files'],
 	list: ['files', 'bytes'],
 	walk: [],
-	copy: ['meta'],
+	copyFile: ['meta'],
 	copyFiles: ['meta'],
-	move: ['meta'],
+	moveFile: ['meta'],
 	moveFiles: ['meta'],
-	delete: ['meta'],
+	deleteFile: ['meta'],
 	uploadFile: ['meta'],
 	downloadFile: ['meta'],
 	uploadFiles: ['files'],
