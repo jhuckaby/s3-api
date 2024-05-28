@@ -35,7 +35,10 @@ cli.mapArgs({
 	'dryrun': 'dry',
 	'dryRun': 'dry',
 	'dry-run': 'dry',
-	'dry_run': 'dry'
+	'dry_run': 'dry',
+	
+	'acl': 'params.ACL',
+	'class': 'params.StorageClass'
 });
 
 // override defaults for progress bar signal handling
@@ -378,11 +381,15 @@ const app = {
 		}
 	},
 	
+	printArgSummary() {
+		// print list of args
+		println( gray(JSON.stringify( { endpoint: this.s3.endpoint || undefined, region: this.s3.region, ...args } )) + "\n" );
+	},
+	
 	async callS3API(cmd) {
 		// send cmd to s3
 		delete args.other;
-		
-		println( gray(JSON.stringify( { region: this.s3.region, ...args } )) + "\n" );
+		this.printArgSummary();
 		
 		try {
 			let result = await this.s3[cmd](args);
@@ -484,7 +491,7 @@ const app = {
 		// await this.callS3API(this.cmd);
 		
 		delete args.other;
-		println( gray(JSON.stringify( { region: this.s3.region, ...args } )) + "\n" );
+		this.printArgSummary();
 		
 		try {
 			let result = await this.s3[cmd](args);
@@ -506,7 +513,7 @@ const app = {
 		this.shiftS3Spec('bucket', 'key') || this.dieUsage(this.cmd);
 		
 		delete args.other;
-		println( gray(JSON.stringify( { region: this.s3.region, ...args } )) + "\n" );
+		this.printArgSummary();
 		
 		try {
 			let { data, meta } = await this.s3.getStream(args);
@@ -532,7 +539,7 @@ const app = {
 		// await this.callS3API(this.cmd);
 		
 		delete args.other;
-		println( gray(JSON.stringify( { region: this.s3.region, ...args } )) + "\n" );
+		this.printArgSummary();
 		
 		try {
 			let result = await this.s3[cmd](args);
@@ -556,7 +563,7 @@ const app = {
 		// await this.callS3API(this.cmd);
 		
 		delete args.other;
-		println( gray(JSON.stringify( { region: this.s3.region, ...args } )) + "\n" );
+		this.printArgSummary();
 		
 		try {
 			let result = await this.s3[cmd](args);
@@ -622,7 +629,7 @@ const app = {
 		// await this.callS3API(this.cmd);
 		
 		delete args.other;
-		println( gray(JSON.stringify( { region: this.s3.region, ...args } )) + "\n" );
+		this.printArgSummary();
 		
 		try {
 			let result = await this.s3[cmd](args);
@@ -714,7 +721,7 @@ const app = {
 		// s3 listBuckets
 		
 		delete args.other;
-		println( gray(JSON.stringify( { region: this.s3.region, ...args } )) + "\n" );
+		this.printArgSummary();
 		
 		try {
 			let result = await this.s3[cmd](); // special call convention -- no args
@@ -985,7 +992,7 @@ const app = {
 		this.shiftOther('localFile') || this.dieUsage(this.cmd);
 		
 		delete args.other;
-		println( gray(JSON.stringify( { region: this.s3.region, ...args } )) + "\n" );
+		this.printArgSummary();
 		
 		let arch_file = args.localFile || this.dieUsage(this.cmd);
 		delete args.localFile;
@@ -1094,7 +1101,7 @@ const app = {
 		this.shiftS3Spec('bucket', 'remotePath') || this.dieUsage(this.cmd);
 		
 		delete args.other;
-		println( gray(JSON.stringify( { region: this.s3.region, ...args } )) + "\n" );
+		this.printArgSummary();
 		
 		let arch_file = args.localFile || this.dieUsage(this.cmd);
 		delete args.localFile;
@@ -1194,7 +1201,7 @@ const app = {
 		this.shiftS3Spec('bucket', 'key') || this.dieUsage(this.cmd);
 		
 		delete args.other;
-		println( gray(JSON.stringify( { region: this.s3.region, ...args } )) + "\n" );
+		this.printArgSummary();
 		
 		let src_path = Path.resolve(args.localPath).replace(/\/$/, '');
 		delete args.localPath;
@@ -1291,7 +1298,7 @@ const app = {
 		this.shiftOther('localPath') || this.dieUsage(this.cmd);
 		
 		delete args.other;
-		println( gray(JSON.stringify( { region: this.s3.region, ...args } )) + "\n" );
+		this.printArgSummary();
 		
 		let dest_path = Path.resolve(args.localPath).replace(/\/$/, '');
 		delete args.localPath;

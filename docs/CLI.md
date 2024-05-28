@@ -1,6 +1,6 @@
 # CLI Reference
 
-This document contains a complete CLI command reference for **s3-api**.  Please make sure to read the [CLI Usage Guide](https://github.com/jhuckaby/s3-api/blob/main/README.md#cli-usage) first, for instructions on how to install and configure the CLI.
+This document contains a complete CLI command reference for the **s3-api** library.  Please make sure to read the [CLI Usage Guide](https://github.com/jhuckaby/s3-api/blob/main/README.md#cli-usage) first, for instructions on how to install and configure the CLI.
 
 Please note that the standard [AWS S3 CLI](https://docs.aws.amazon.com/cli/latest/reference/s3/) is a much more feature-rich (not to mentioned battle-hardened) tool, and you should consider using that instead.  This module is a simplified wrapper that only supports basic S3 commands.
 
@@ -51,6 +51,8 @@ The following command-line arguments are shared across multiple commands:
 | `credentials` | Object | Optionally specify your AWS credentials on the command-line.  See [Credentials](#credentials) below. |
 | `prefix` | String | Optionally prefix all S3 keys with a fixed value. |
 | `params` | Object | Optionally pass custom parameters directly to the AWS API.  See [S3 Params](#s3-params) below. |
+| `acl` | String | Alias for `params.ACL`.  See [S3 Params](#s3-params) below. |
+| `class` | String | Alias for `params.StorageClass`.  [S3 Params](#s3-params) below. |
 | `gzip` | Object | Optionally customize the gzip compression settings.  See [Compression](#compression) below. |
 | `timeout` | Integer | The number of milliseconds to wait before killing idle sockets.  The default is `5000` (5 seconds). |
 | `connectTimeout` | Integer | The number of milliseconds to wait when initially connecting to S3.  The default is `5000` (5 seconds). |
