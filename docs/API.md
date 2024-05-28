@@ -56,6 +56,13 @@ The class constructor accepts an object containing configuration properties.  Th
 | `cache` | Object | Optionally enable caching for JSON records.  See [Caching](https://github.com/jhuckaby/s3-api/blob/main/README.md#caching) for details. |
 | `dry` | Boolean | Optionally enable "dry-run" mode, which will take no actual actions against S3 or the local filesystem. |
 
+The following advanced properties should only be needed if you are connecting to a custom S3 endpoint, or a non-AWS S3 provider:
+
+| Property Name | Type | Description |
+|---------------|------|-------------|
+| `endpoint` | String | The custom S3 endpoint URL, e.g. `http://MINIO_HOST:9000`. |
+| `forcePathStyle` | Boolean | Whether to force path style URLs for S3 objects.  This should typically be set to `true` for non-AWS S3 providers. |
+
 Example use:
 
 ```js

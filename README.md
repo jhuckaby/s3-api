@@ -86,26 +86,26 @@ let s3 = new S3({
 		accessKeyId: "YOUR_ACCESS_KEY_HERE",
 		secretAccessKey: "YOUR_SECRET_KEY_HERE"
 	},
-	bucket: 'my-bucket-uswest1',
+	bucket: 'my-bucket',
 	prefix: 'myapp/data/'
 });
 ```
 
-The class constructor expects an object, which accepts several different properties (see below).  At the very least you should specify a `bucket` and a `prefix`.  You may also need to specify `credentials` as well, depending on your setup.  The prefix is prepended onto all S3 keys, and is a great way to keep your app's S3 data in an isolated area when sharing a bucket.
+The [class constructor](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#constructor) expects an object, which accepts several different properties (see below).  At the very least you should specify a `bucket` and a `prefix`.  You may also need to specify `credentials` as well, depending on your setup.  The prefix is prepended onto all S3 keys, and is a great way to keep your app's S3 data in an isolated area when sharing a bucket.
 
 Once you have your class instance created, call one of the available API methods (see [API Reference](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md) for list).  Example:
 
 ```js
 try {
-	let args = await s3.uploadFile({ localFile: '/path/to/image.gif', key: 's3dir/myfile.gif' });
-	// `args.meta` will be the metadata object from S3
+	let result = await s3.uploadFile({ localFile: '/path/to/image.gif', key: 's3dir/myfile.gif' });
+	// `result.meta` will be the metadata object from S3
 }
 catch(err) {
 	// handle error here
 }
 ```
 
-The result `args` object properties will vary based on the API call.  In the examples below, `args` is destructed into local variables using the `let {...} =` syntax.  This is known as [destructuring assignment](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment).  Example:
+The `result` object's properties will vary based on the API call.  In the examples below, the result is destructed into local variables using the `let {...} =` syntax.  This is known as [destructuring assignment](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment).  Example:
 
 ```js
 try {
@@ -118,7 +118,7 @@ catch(err) {
 }
 ```
 
-Please note that the local variables **must** be named exactly as shown above (e.g. `files`, `bytes` in this case), as they are being yanked from an object.  You can omit specific variables if you don't care about them, e.g. `let { files } = ` (omitting `bytes`).  If you don't want to declare new local variables for the object properties, just use the `let args =` syntax instead.
+Please note that the local variables **must** be named exactly as shown above (e.g. `files`, `bytes` in this case), as they are being yanked from an object.  You can omit specific variables if you don't care about them, e.g. `let { files } = await ...` (omitting `bytes`).  If you don't want to declare new local variables for the object properties, just use the `let result = await ...` syntax instead.
 
 It is highly recommended that you instantiate the S3 API class one time, and reuse it for the lifetime of your application.  The reason is, the library reuses network connections to reduce S3 lag.  Each time you instantiate a new class it has to open new connections.
 
@@ -150,7 +150,7 @@ You can enable optional caching for JSON records, to store then in RAM for a giv
 const S3 = require('s3-api');
 
 let s3 = new S3({
-	bucket: 'my-bucket-uswest1',
+	bucket: 'my-bucket',
 	prefix: 'myapp/data/',
 	cache: {
 		maxAge: 3600
@@ -162,7 +162,7 @@ This would cache all JSON files fetched using [get()](https://github.com/jhuckab
 
 ```js
 let s3 = new S3({
-	bucket: 'my-bucket-uswest1',
+	bucket: 'my-bucket',
 	prefix: 'myapp/data/',
 	cache: {
 		maxAge: 3600,
@@ -254,7 +254,7 @@ To control the gzip compression level and other settings, specify a `gzip` prope
 
 ```js
 let s3 = new S3({
-	bucket: 'my-bucket-uswest1',
+	bucket: 'my-bucket',
 	prefix: 'myapp/data/',
 	gzip: {
 		level: 6,
@@ -524,7 +524,7 @@ You can alternatively declare some `params` in the class constructor, so you don
 
 ```js
 let s3 = new S3({
-	bucket: 'my-bucket-uswest1',
+	bucket: 'my-bucket',
 	prefix: 'myapp/data/',
 	params: {
 		ACL: 'public-read',
@@ -544,6 +544,33 @@ catch(err) {
 When `params` are specified in both places, they are merged together, and the properties in the API call take precedence over those defined in the class instance.
 
 For a complete list of all the properties you can specify in `params`, see the [AWS - PutObjectRequest](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-s3/Interface/PutObjectRequest/) docs.
+
+### Non-AWS S3 Providers
+
+It is possible to connect to a non-AWS S3-compatible provider such as [MinIO](https://min.io/).  To do this, you need to specify some additional properties when constructing the class:
+
+```js
+let s3 = new S3({
+	endpoint: "http://MINIO_HOST:9000",
+	forcePathStyle: true,
+	
+	credentials: {
+		accessKeyId: "YOUR_ACCESS_KEY_HERE",
+		secretAccessKey: "YOUR_SECRET_KEY_HERE"
+	},
+	
+	bucket: 'my-bucket',
+	prefix: 'myapp/data/'
+});
+```
+
+See the [class constructor](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#constructor) reference for more details.
+
+To start a local MinIO server using Docker, run this command:
+
+```sh
+docker run --name minio -p 9000:9000 -p 9001:9001 quay.io/minio/minio server /data --console-address ":9001"
+```
 
 ### Logging
 

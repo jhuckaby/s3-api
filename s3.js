@@ -18,6 +18,12 @@ const { NodeHttpHandler } = require("@smithy/node-http-handler");
 
 const async = Tools.async;
 
+const S3_CLIENT_ARGS = {
+	credentials: 1,
+	endpoint: 1,
+	forcePathStyle: 1
+};
+
 /** 
  * S3API class wraps the AWS S3 SDK and provides a convenient API atop it. 
  */
@@ -64,7 +70,10 @@ class S3API {
 				socketTimeout: this.timeout
 			})
 		};
-		if (this.credentials) opts.credentials = this.credentials;
+		
+		for (let key in S3_CLIENT_ARGS) {
+			if (key in args) opts[key] = args[key];
+		}
 		
 		// add ref to S3 class so users can send custom commands
 		this.S3 = S3;

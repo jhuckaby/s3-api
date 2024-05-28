@@ -157,7 +157,7 @@ const app = {
 		// copy some args over to S3 API
 		let s3_args = {};
 		for (let key in args) {
-			if (key.match(/^(region|bucket|credentials|prefix|params|gzip|timeout|connectTimeout|retries)$/)) {
+			if (key.match(/^(region|bucket|credentials|prefix|params|gzip|timeout|connectTimeout|retries|endpoint|forcePathStyle)$/)) {
 				s3_args[key] = args[key];
 				delete args[key];
 				delete cli.args[key];
