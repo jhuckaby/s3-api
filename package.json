@@ -1,6 +1,6 @@
 {
 	"name": "s3-api",
-	"version": "2.0.7",
+	"version": "2.0.8",
 	"description": "A simple, light wrapper around the AWS S3 v3 API.",
 	"main": "s3.js",
 	"bin": {
