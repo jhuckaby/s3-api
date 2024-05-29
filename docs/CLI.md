@@ -472,11 +472,9 @@ Of course, you can use the specific [copyFile](#copyfile), [copyFiles](#copyfile
 
 ```
 s3 copyFile S3_SRC_URL S3_DEST_URL [--KEY VALUE...]
-s3 copy S3_SRC_URL S3_DEST_URL [--KEY VALUE...]
-s3 cp S3_SRC_URL S3_DEST_URL [--KEY VALUE...]
 ```
 
-The `copyFile` command (alias `copy` or `cp`) copies one S3 object to another S3 location.  This can copy between buckets as well.  Example:
+The `copyFile` command copies one S3 object to another S3 location.  This can copy between buckets as well.  Example:
 
 ```sh
 s3 copyFile s3://my-bucket/users/oldkermit.json s3://my-bucket/users/newkermit.json
@@ -569,11 +567,9 @@ Of course, you can use the specific [moveFile](#movefile), [moveFiles](#movefile
 
 ```
 s3 moveFile S3_SRC_URL S3_DEST_URL [--KEY VALUE...]
-s3 move S3_SRC_URL S3_DEST_URL [--KEY VALUE...]
-s3 mv S3_SRC_URL S3_DEST_URL [--KEY VALUE...]
 ```
 
-The `moveFile` command (alias `move` or `mv`) moves one S3 object to another S3 location.  Essentially, it performs a [copyFile](#copyfile) followed by a [deleteFile](#deletefile).  This can move between buckets as well.  Example:
+The `moveFile` command moves one S3 object to another S3 location.  Essentially, it performs a [copyFile](#copyfile) followed by a [deleteFile](#deletefile).  This can move between buckets as well.  Example:
 
 ```sh
 s3 moveFile s3://my-bucket/users/oldkermit.json s3://my-bucket/users/newkermit.json
