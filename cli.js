@@ -81,76 +81,50 @@ const S3 = require('.');
 const S3_URL_RE = /^(s3:\/\/|s3:|\/\/)([^\/]+)\/(.*)$/i;
 
 const CMD_HELP_TEXT = {
-	docs: `s3 docs`,
-	
-	// put: `s3 put --bucket my-bucket --key users/kermit.json --value.animal "frog" --value.color "green"`,
-	put: `s3 put s3://my-bucket/users/kermit.json '{"animal":"frog", "color":"green"}'`,
-	
-	// putStream: `s3 putStream --bucket my-bucket --key s3dir/myfile.gif`
-	putStream: `s3 putStream s3://my-bucket/s3dir/myfile.gif`,
-	
-	// update: `s3 update --bucket my-bucket --key users/kermit.json --update.animal "frog" --update.color "green"`,
-	update: `s3 update s3://my-bucket/users/kermit.json --update.animal "frog" --update.color "green"`,
-	
-	// get: `s3 get --bucket my-bucket --key users/kermit.json`,
-	get: `s3 get s3://my-bucket/users/kermit.json`,
-	
-	// getStream: `s3 getStream --bucket my-bucket --key s3dir/myfile.gif`
-	getStream: `s3 getStream s3://my-bucket/s3dir/myfile.gif`,
-	
-	// head: `s3 head --bucket my-bucket --key "s3dir/myfile.gif"`,
-	head: `s3 head s3://my-bucket/s3dir/myfile.gif`,
-	
-	// list: `s3 list --bucket my-bucket --remotePath s3dir`,
-	list: `s3 list s3://my-bucket/s3dir/`,
-	
-	// listFolders: `s3 listFolders --bucket my-bucket --remotePath "s3dir"`,
-	listFolders: `s3 listFolders s3://my-bucket/s3dir/`,
-	
-	// listBuckets: `s3 listBuckets`,
-	listBuckets: `s3 listBuckets`,
-	
-	// copy: `s3 copy --bucket my-bucket --sourceKey "users/oldkermit.json" --key "users/newkermit.json"`,
-	copy: `s3 copy s3://my-bucket/users/oldkermit.json s3://my-bucket/users/newkermit.json`,
-	
-	// copyFiles: `s3 copyFiles --bucket my-bucket --remotePath users --destPath newusers`,
-	copyFiles: `s3 copyFiles s3://my-bucket/users/ s3://my-bucket/newusers/`,
-	
-	// move: `s3 move --bucket my-bucket --sourceKey "users/oldkermit.json" --key "users/newkermit.json"`,
-	move: `s3 move s3://my-bucket/users/oldkermit.json s3://my-bucket/users/newkermit.json`,
-	
-	// moveFiles: `s3 moveFiles --bucket my-bucket --remotePath users --destPath newusers`,
-	moveFiles: `s3 moveFiles s3://my-bucket/users/ s3://my-bucket/newusers/`,
-	
-	// delete: `s3 delete --bucket my-bucket --key "s3dir/myfile.gif"`,
-	delete: `s3 delete s3://my-bucket/s3dir/myfile.gif`,
-	
-	// deleteFiles: `s3 deleteFiles --bucket my-bucket --remotePath "s3dir/uploaded" --filespec '\\.gif$'`,
-	deleteFiles: `s3 deleteFiles s3://my-bucket/s3dir/uploaded/ --filespec '\\.gif$'`,
-	
-	// uploadFile: `s3 uploadFile --bucket my-bucket --localFile "/path/to/image.gif" --key "s3dir/myfile.gif"`,
-	upload: `s3 upload /path/to/image.gif s3://my-bucket/s3dir/myfile.gif`,
-	
-	// uploadFiles: `s3 uploadFiles --bucket my-bucket --localPath "/path/to/images" --remotePath "s3dir/uploaded"`,
-	uploadFiles: `s3 uploadFiles /path/to/images/ s3://my-bucket/s3dir/uploaded/`,
-	
-	// downloadFile: `s3 downloadFile --bucket my-bucket --key "s3dir/myfile.gif" --localFile "/path/to/image.gif"`,
-	download: `s3 download s3://my-bucket/s3dir/myfile.gif /path/to/image.gif`,
-	
-	// downloadFiles: `s3 downloadFiles --bucket my-bucket --remotePath "s3dir/uploaded" --localPath "/path/to/images"`,
-	downloadFiles: `s3 downloadFiles s3://my-bucket/s3dir/uploaded/ /path/to/images/`,
-	
-	// snapshot: `s3 snapshot --bucket my-bucket --remotePath "s3dir/images" --localFile "/path/to/backup-[yyyy]-[mm]-[dd].zip"`,
-	snapshot: `s3 snapshot s3://my-bucket/s3dir/images/ /path/to/snapshot-[yyyy]-[mm]-[dd].zip`,
-	
-	// restoreSnapshot: `s3 restoreSnapshot --bucket my-bucket --localFile "/path/to/backup-[yyyy]-[mm]-[dd].zip" --remotePath "s3dir/images"`,
-	restoreSnapshot: `s3 restoreSnapshot /path/to/snapshot-2024-05-22.zip s3://my-bucket/s3dir/images/`,
-	
-	// backup: `s3 backup --bucket my-bucket --localPath "/path/to/files" --key "backups/mybackup-[yyyy]-[mm]-[dd].zip"`,
-	backup: `s3 backup /path/to/files/ s3://my-bucket/backups/mybackup-[yyyy]-[mm]-[dd].zip`,
-	
-	// restoreBackup: `s3 restoreBackup --bucket my-bucket --key "backups/mybackup-2024-05-22.zip" --localPath "/path/to/files"`
-	restoreBackup: `s3 restoreBackup s3://my-bucket/backups/mybackup-2024-05-22.zip /path/to/files/`
+	"docs": `s3 docs`,
+	"put": "s3 put S3_URL RAW_JSON",
+	"putStream": "s3 putStream S3_URL [--KEY VALUE...]",
+	"update": "s3 update S3_URL --update.KEY \"VALUE\" [--update.KEY \"VALUE\" ...]",
+	"get": "s3 get S3_URL [--KEY VALUE...]",
+	"getStream": "s3 getStream S3_URL [--KEY VALUE...]",
+	"head": "s3 head S3_URL",
+	"list": "s3 list S3_URL [--KEY VALUE...]",
+	"listFolders": "s3 listFolders S3_URL [--KEY VALUE...]",
+	"listBuckets": "s3 listBuckets [--KEY VALUE...]",
+	"copy": "s3 copy S3_URL_OR_LOCAL_PATH S3_URL_OR_LOCAL_PATH",
+	"copyFile": "s3 copyFile S3_SRC_URL S3_DEST_URL [--KEY VALUE...]",
+	"copyFiles": "s3 copyFiles S3_SRC_URL/ S3_DEST_URL/ [--KEY VALUE...]",
+	"move": "s3 copy S3_URL_OR_LOCAL_PATH S3_URL_OR_LOCAL_PATH",
+	"moveFile": "s3 moveFile S3_SRC_URL S3_DEST_URL [--KEY VALUE...]",
+	"moveFiles": "s3 moveFiles S3_SRC_URL/ S3_DEST_URL/ [--KEY VALUE...]",
+	"deleteFile": "s3 deleteFile S3_URL [--KEY VALUE...]",
+	"deleteFiles": "s3 deleteFiles S3_URL/ [--KEY VALUE...]",
+	"uploadFile": "s3 uploadFile LOCAL_FILE S3_URL [--KEY VALUE...]",
+	"uploadFiles": "s3 uploadFiles LOCAL_DIR/ S3_URL/ [--KEY VALUE...]",
+	"downloadFile": "s3 downloadFile S3_URL LOCAL_FILE [--KEY VALUE...]",
+	"downloadFiles": "s3 downloadFiles S3_URL/ LOCAL_DIR/ [--KEY VALUE...]",
+	"snapshot": "s3 snapshot S3_URL/ LOCAL_FILE [--KEY VALUE...]",
+	"restoreSnapshot": "s3 restoreSnapshot LOCAL_FILE S3_URL/ [--KEY VALUE...]",
+	"backup": "s3 backup LOCAL_DIR/ S3_URL [--KEY VALUE...]",
+	"restoreBackup": "s3 restoreBackup S3_URL LOCAL_DIR/ [--KEY VALUE...]"
+};
+
+const CMD_ALIASES = {
+	ls: 'list',
+	lf: 'listFolders',
+	lb: 'listBuckets',
+	cp: 'copy',
+	mv: 'move',
+	delete: 'deleteFile',
+	rm: 'deleteFile',
+	upload: 'uploadFile',
+	up: 'uploadFile',
+	download: 'downloadFile',
+	dl: 'downloadFile',
+	snap: 'snapshot',
+	rs: 'restoreSnapshot',
+	bk: 'backup',
+	rb: 'restoreBackup'
 };
 
 const app = {
@@ -256,17 +230,22 @@ const app = {
 		
 		// links
 		text = text.replace( /\[([\w\s\-\.\'\/\(\)]+?)\]\((.+?)\)/g, function(m_all, m_g1, m_g2) {
-			return '' + yellow.bold.underline(m_g2) + '';
+			if (m_g2.match(/^\#/)) return '' + yellow.bold.underline(m_g1) + '';
+			else return '' + yellow.bold.underline(m_g2) + '';
 		} );
 		
 		// headings
-		text = text.replace( /(^|\n)(\#+)\s*([^\n]+)/g, function(m_all, m_g1, m_g2, m_g3) {
+		text = text.replace( /(^|\n)(\#\#+)\s*([^\n]+)/g, function(m_all, m_g1, m_g2, m_g3) {
 			return m_g1 + gray(m_g2) + ' ' + magenta.bold(m_g3);
 		} );
 		
 		// code blocks
 		text = text.replace( /(\n\`\`\`)(\w+)\n([\S\s]+?)(\n\`\`\`)/g, function(m_all, m_g1, m_g2, m_g3, m_g4) {
-			return "\n" + bold.gray( m_g3.trim() );
+			// return "\n" + bold.gray( m_g3.trim() );
+			return "\n" + m_g3.trim().split(/\n/).map( function(line) {
+				if (line.match(/^\#/)) return green(line);
+				else return bold.gray(line);
+			} ).join("\n");
 		});
 		text = text.replace( /(\n\`\`\`\n)([\S\s]+?)(\n\`\`\`)/g, function(m_all, m_g1, m_g2, m_g3, m_g4) {
 			return "\n" + bold.gray( m_g2.trim() );
@@ -409,13 +388,17 @@ const app = {
 		// show quick help
 		let hcmd = (args.other && args.other.length) ? args.other.shift() : '';
 		if (hcmd) {
+			
+			// allow for `s3 help cp` -- gotta resolve aliases here!
+			if (CMD_ALIASES[hcmd]) hcmd = CMD_ALIASES[hcmd];
+			
 			// detailed help for specific command
 			if (!CMD_HELP_TEXT[hcmd]) this.die("Unknown command: " + hcmd);
 			// let text = CMD_HELP_TEXT[hcmd];
 			// println( "\n" + yellow.bold(hcmd + ':') + " " + green(text) );
 			
 			let docs = fs.readFileSync(Path.join( __dirname, 'docs/CLI.md' ), 'utf8');
-			let re = new RegExp('\\n(\\#\\#\\#\\s+' + hcmd + '\\n[\\S\\s]+?)\\n\\#+');
+			let re = new RegExp('\\n(\\#\\#\\#\\s+' + hcmd + '\\n[\\S\\s]+?)\\n\\#\#+');
 			if (docs.match(re)) {
 				let section = RegExp.$1;
 				println( "\n" + this.markdown(section) );
@@ -775,6 +758,21 @@ const app = {
 			}
 		}
 		
+		// default to copyFile
+		cmd = this.cmd = 'copyFile';
+		await this.cmd_copyFile();
+	},
+	
+	async cmd_cp() {
+		// alias for copy
+		cmd = this.cmd = 'copy';
+		await this.cmd_copy();
+	},
+	
+	async cmd_copyFile() {
+		// copy file
+		// s3 copy s3://my-bucket/users/oldkermit.json s3://my-bucket/users/newkermit.json
+		
 		// allow --recursive to jump over to copyFiles
 		if (args.recursive) {
 			delete args.recursive;
@@ -785,12 +783,6 @@ const app = {
 		this.shiftS3Spec('sourceBucket', 'sourceKey') || this.dieUsage(this.cmd);
 		this.shiftS3Spec('bucket', 'key') || this.dieUsage(this.cmd);
 		await this.callS3API('copyFile');
-	},
-	
-	async cmd_cp() {
-		// alias for copy
-		cmd = this.cmd = 'copy';
-		await this.cmd_copy();
 	},
 	
 	async cmd_copyFiles() {
@@ -829,6 +821,21 @@ const app = {
 			}
 		}
 		
+		// default to moveFile
+		cmd = this.cmd = 'moveFile';
+		await this.cmd_moveFile();
+	},
+	
+	async cmd_mv() {
+		// alias for move
+		cmd = this.cmd = 'move';
+		await this.cmd_move();
+	},
+	
+	async cmd_moveFile() {
+		// move file
+		// s3 move s3://my-bucket/users/oldkermit.json s3://my-bucket/users/newkermit.json
+		
 		// allow --recursive to jump over to moveFiles
 		if (args.recursive) {
 			delete args.recursive;
@@ -839,12 +846,6 @@ const app = {
 		this.shiftS3Spec('sourceBucket', 'sourceKey') || this.dieUsage(this.cmd);
 		this.shiftS3Spec('bucket', 'key') || this.dieUsage(this.cmd);
 		await this.callS3API('moveFile');
-	},
-	
-	async cmd_mv() {
-		// alias for move
-		cmd = this.cmd = 'move';
-		await this.cmd_move();
 	},
 	
 	async cmd_moveFiles() {
@@ -865,9 +866,9 @@ const app = {
 		cli.progress.end();
 	},
 	
-	async cmd_delete() {
+	async cmd_deleteFile() {
 		// delete file
-		// s3 delete s3://my-bucket/s3dir/myfile.gif
+		// s3 deleteFile s3://my-bucket/s3dir/myfile.gif
 		
 		// allow --recursive to jump over to deleteFiles
 		if (args.recursive) {
@@ -880,15 +881,21 @@ const app = {
 		await this.callS3API('deleteFile');
 	},
 	
-	async cmd_rm() {
-		// alias for delete
-		cmd = this.cmd = 'delete';
-		await this.cmd_delete();
+	async cmd_delete() {
+		// alias for deleteFile
+		cmd = this.cmd = 'deleteFile';
+		await this.cmd_deleteFile();
 	},
 	
-	async cmd_upload() {
+	async cmd_rm() {
+		// alias for deleteFile
+		cmd = this.cmd = 'deleteFile';
+		await this.cmd_deleteFile();
+	},
+	
+	async cmd_uploadFile() {
 		// upload single file -- alias for uploadFile
-		// s3 upload /path/to/image.gif s3://my-bucket/s3dir/myfile.gif
+		// s3 uploadFile /path/to/image.gif s3://my-bucket/s3dir/myfile.gif
 		
 		// allow --recursive to jump over to uploadFiles
 		if (args.recursive) {
@@ -914,21 +921,27 @@ const app = {
 		cli.progress.end();
 	},
 	
+	async cmd_upload() {
+		// alias for uploadFile
+		cmd = this.cmd = 'uploadFile';
+		await this.cmd_uploadFile();
+	},
+	
 	async cmd_up() {
-		// alias for upload
-		cmd = this.cmd = 'upload';
-		await this.cmd_upload();
+		// alias for uploadFile
+		cmd = this.cmd = 'uploadFile';
+		await this.cmd_uploadFile();
 	},
 	
 	async cmd_ul() {
-		// alias for upload
-		cmd = this.cmd = 'upload';
-		await this.cmd_upload();
+		// alias for uploadFile
+		cmd = this.cmd = 'uploadFile';
+		await this.cmd_uploadFile();
 	},
 	
-	async cmd_download() {
+	async cmd_downloadFile() {
 		// upload single file -- alias for downloadFile
-		// s3 download s3://my-bucket/s3dir/myfile.gif /path/to/image.gif
+		// s3 downloadFile s3://my-bucket/s3dir/myfile.gif /path/to/image.gif
 		
 		// allow --recursive to jump over to downloadFiles
 		if (args.recursive) {
@@ -950,10 +963,16 @@ const app = {
 		cli.progress.end();
 	},
 	
+	async cmd_download() {
+		// alias for downloadFile
+		cmd = this.cmd = 'downloadFile';
+		await this.cmd_downloadFile();
+	},
+	
 	async cmd_dl() {
-		// alias for download
-		cmd = this.cmd = 'download';
-		await this.cmd_download();
+		// alias for downloadFile
+		cmd = this.cmd = 'downloadFile';
+		await this.cmd_downloadFile();
 	},
 	
 	async cmd_uploadFiles() {

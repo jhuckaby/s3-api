@@ -43,6 +43,7 @@ Here is the table of contents for this document:
 	* [Using Buffers](#using-buffers)
 	* [Using Streams](#using-streams)
 	* [Custom S3 Params](#custom-s3-params)
+	* [Non-AWS S3 Providers](#non-aws-s3-providers)
 	* [Logging](#logging)
 		+ [Console](#console)
 	* [Performance Tracking](#performance-tracking)
@@ -685,50 +686,50 @@ This will install a global `s3` command in your PATH (typically in `/usr/bin`).
 
 ### File Management
 
-The CLI allows you to easily upload and download files to/from S3 using the [upload](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#upload) and [download](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#download) commands.  Here are examples:
+The CLI allows you to easily upload and download files to/from S3 using the [uploadFile](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#uploadfile) and [downloadFile](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#downloadfile) commands.  However, it's easier to just use the omni [copy](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#copy) command which does everything.  Here are examples:
 
 ```sh
 # Upload single file
-s3 upload /path/to/image.gif s3://my-bucket/s3dir/myfile.gif
+s3 copy /path/to/image.gif s3://my-bucket/s3dir/myfile.gif
 
 # Download single file
-s3 download s3://my-bucket/s3dir/myfile.gif /path/to/image.gif
+s3 copy s3://my-bucket/s3dir/myfile.gif /path/to/image.gif
 ```
 
-You can also upload and download multiple files and entire directories using [uploadFiles](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#uploadfiles) and [downloadFiles](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#downloadfiles):
+You can also upload and download multiple files and entire directories using [uploadFiles](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#uploadfiles) and [downloadFiles](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#downloadfiles), or just add `--recursive` to the [copy](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#copy) command, which is easier to remember:
 
 ```sh
 # Upload entire folder
-s3 uploadFiles /path/to/images/ s3://my-bucket/s3dir/uploaded/
+s3 copy /path/to/images/ s3://my-bucket/s3dir/uploaded/ --recursive
 
 # Download entire folder
-s3 downloadFiles s3://my-bucket/s3dir/uploaded/ /path/to/images/
+s3 copy s3://my-bucket/s3dir/uploaded/ /path/to/images/ --recursive
 ```
 
-These commands provide several ways of filtering files and paths to exclude files, or only include certain files.  Example:
+These recursive commands provide several ways of filtering files and paths to exclude files, or only include certain files.  Example:
 
 ```sh
 # Only upload GIF images
-s3 uploadFiles /path/to/images/ s3://my-bucket/s3dir/uploaded/ --filespec '\.gif$'
+s3 copy /path/to/images/ s3://my-bucket/s3dir/uploaded/ --recursive --filespec '\.gif$'
 
 # Only download files over than 1 week
-s3 downloadFiles s3://my-bucket/s3dir/uploaded/ /path/to/images/ --older "1 week"
+s3 copy s3://my-bucket/s3dir/uploaded/ /path/to/images/ --recursive --older "1 week"
 
 # Only upload files larger than 2MB
-s3 uploadFiles /path/to/images/ s3://my-bucket/s3dir/uploaded/ --larger "2 MB"
+s3 copy /path/to/images/ s3://my-bucket/s3dir/uploaded/ --recursive --larger "2 MB"
 ```
 
-These commands all support optional upload compression, and/or download decompression, so you can store `.gz` compressed files in S3, and decompress them on download.  Examples:
+The upload and download commands all support optional upload compression, and/or download decompression, so you can store `.gz` compressed files in S3, and decompress them on download.  Examples:
 
 ```sh
 # Upload a bunch of files and compress with gzip (and add ".gz" suffix to all S3 files)
-s3 uploadFiles /path/to/files/ s3://my-bucket/s3dir/uploaded/ --compress --suffix ".gz"
+s3 copy /path/to/files/ s3://my-bucket/s3dir/uploaded/ --recursive --compress --suffix ".gz"
 
 # Download a bunch of gzip files and decompress (and strip off ".gz" suffix)
-s3 downloadFiles s3://my-bucket/s3dir/uploaded/ /path/to/files/ --decompress --strip '\.gz$'
+s3 copy s3://my-bucket/s3dir/uploaded/ /path/to/files/ --recursive --decompress --strip '\.gz$'
 ```
 
-You can also copy & move files around (even across buckets) using [copy](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#copy) and [move](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#move):
+You can also copy & move files around from S3 to S3 (across buckets too, if you want) using [copy](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#copy) and [move](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#move):
 
 ```sh
 # Copy file
@@ -738,14 +739,14 @@ s3 copy s3://my-bucket/users/oldkermit.json s3://my-bucket/users/newkermit.json
 s3 move s3://my-bucket/users/oldkermit.json s3://my-bucket/users/newkermit.json
 ```
 
-And to copy or move multiple files, use [copyFiles](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#copyfiles) or [moveFiles](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#movefiles) respectively:
+And to copy or move multiple files and folders from S3 to S3, use [copyFiles](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#copyfiles) or [moveFiles](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#movefiles), or just add `--recursive`:
 
 ```sh
 # Copy entire folder
-s3 copyFiles s3://my-bucket/users/ s3://my-bucket/newusers/
+s3 copy s3://my-bucket/users/ s3://my-bucket/newusers/ --recursive
 
 # Move entire folder
-s3 moveFiles s3://my-bucket/users/ s3://my-bucket/newusers/
+s3 move s3://my-bucket/users/ s3://my-bucket/newusers/ --recursive
 ```
 
 You can delete single S3 files and entire folder trees using the [delete](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#delete) and [deleteFiles](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#deletefiles) commands:
@@ -755,14 +756,14 @@ You can delete single S3 files and entire folder trees using the [delete](https:
 s3 delete s3://my-bucket/users/newkermit.json
 
 # Delete entire folder
-s3 deleteFiles s3://my-bucket/s3dir/uploaded/
+s3 delete s3://my-bucket/s3dir/uploaded/ --recursive
 ```
 
-The `deleteFiles` command also accepts all the filtering options that `uploadFiles` and `downloadFiles` use.  Example:
+The recursive [deleteFiles](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#deletefiles) command also accepts all the filtering options that [uploadFiles](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#uploadfiles) and [downloadFiles](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#downloadfiles) use.  Example:
 
 ```sh
 # Delete selected files
-s3 deleteFiles s3://my-bucket/s3dir/uploaded/ --filespec '\.gif$' --older "15 days"
+s3 delete s3://my-bucket/s3dir/uploaded/ --recursive --filespec '\.gif$' --older "15 days"
 ```
 
 To check if a file exists and view its metadata, use the [head](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#head) command:

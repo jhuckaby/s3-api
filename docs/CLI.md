@@ -27,14 +27,16 @@ Please note that the standard [AWS S3 CLI](https://docs.aws.amazon.com/cli/lates
 	* [listFolders](#listfolders)
 	* [listBuckets](#listbuckets)
 	* [copy](#copy)
+	* [copyFile](#copyfile)
 	* [copyFiles](#copyfiles)
 	* [move](#move)
+	* [moveFile](#movefile)
 	* [moveFiles](#movefiles)
-	* [delete](#delete)
+	* [deleteFile](#deletefile)
 	* [deleteFiles](#deletefiles)
-	* [upload](#upload)
+	* [uploadFile](#uploadfile)
 	* [uploadFiles](#uploadfiles)
-	* [download](#download)
+	* [downloadFile](#downloadfile)
 	* [downloadFiles](#downloadfiles)
 	* [snapshot](#snapshot)
 	* [restoreSnapshot](#restoresnapshot)
@@ -64,7 +66,7 @@ The following command-line arguments are shared across multiple commands:
 | `quiet` (`q`) | Boolean | Suppress all output entirely (except for commands like [get](#get)). |
 | `verbose` (`v`) | Boolean | Enable extra verbose output, for informational or troubleshooting purposes. |
 | `dry` (`d`) | Boolean | Optionally enable "dry-run" mode, which will take no actual actions against S3 or the local filesystem. |
-| `recursive` (`r`) | Boolean | Switch [copy](#copy), [move](#move), [delete](#delete), [upload](#upload) and [download](#download) into their multi-file equivalents. |
+| `recursive` (`r`) | Boolean | Switch [copyFile](#copyfile), [moveFile](#movefile), [deleteFile](#deletefile), [uploadFile](#uploadfile) and [downloadFile](#downloadfile) into their multi-file equivalents. |
 
 These arguments should all be specified using a double-dash prefix, e.g. `--region us-west-1`.
 
@@ -80,7 +82,7 @@ However, note that authenticating on the command-line is discouraged, because yo
 
 ### S3 Params
 
-All of the upload related commands (i.e. [put](#put), [update](#update), [copy](#copy), [move](#move), [upload](#upload) and [uploadFiles](#uploadfiles)) accept an optional `--params` argument.  This allows you specify options that are passed directly to the AWS S3 API, for things like ACL and Storage Class.  Example:
+All of the upload related commands (i.e. [put](#put), [update](#update), [copyFile](#copyfile), [moveFile](#movefile), [uploadFile](#uploadfile) and [uploadFiles](#uploadfiles)) accept an optional `--params` argument.  This allows you specify options that are passed directly to the AWS S3 API, for things like ACL and Storage Class.  Example:
 
 ```sh
 s3 upload /path/to/image.gif s3://my-bucket/s3dir/myfile.gif --params.ACL "public-read" --params.StorageClass "STANDARD_IA"
@@ -119,7 +121,7 @@ To fetch metadata for a record, use the [head](#head) command, or for text/JSON 
 
 ### Compression
 
-To control the gzip compression level when using upload commands and compression (namely [upload](#upload) and [uploadFiles](#uploadfiles)), use the `--gzip` argument.  You can set the compression level and memory usage level like this:
+To control the gzip compression level when using upload commands and compression (namely [uploadFile](#uploadfile) and [uploadFiles](#uploadfiles)), use the `--gzip` argument.  You can set the compression level and memory usage level like this:
 
 ```sh
 s3 upload /path/to/file.txt s3://my-bucket/s3dir/file.txt.gz --compress --gzip.level 9 --gzip.memLevel 9
@@ -428,17 +430,59 @@ The `listBuckets` command accepts the following optional arguments:
 ### copy
 
 ```
+s3 copy S3_URL_OR_LOCAL_PATH S3_URL_OR_LOCAL_PATH
+s3 cp S3_URL_OR_LOCAL_PATH S3_URL_OR_LOCAL_PATH
+```
+
+The `copy` command (alias `cp`) is an omni-command -- a multi-command hub, which will route to other commads automatically, performing the correct action given the arguments and flags passed in.  It can copy objects from S3 to S3, download files or folders from S3, or upload files or folders to S3.  You can pass any combination of S3 URL and S3 URL, S3 URL and local path, or local path and S3 URL.  S3 URLs are recognized by the prefix, which can be `s3://`, `s3:` or even `//` (protocol-relative).  If the argument doesn't match one of those patterns, it is assumed ot be a local filesystem path.  Here is how it works:
+
+If you specify two S3 URLs, one is copied to the other (this routes the command to [copyFile](#copyfile)).  Add `--recursive` (or `-r`) and it routes to [copyFiles](#copyfiles).  Examples:
+
+```sh
+# Copy file from S3 to S3
+s3 copy s3://my-bucket/users/oldkermit.json s3://my-bucket/users/newkermit.json
+
+# Copy entire folder from S3 to S3
+s3 copy s3://my-bucket/users/ s3://my-bucket/newusers/ --recursive
+```
+
+If you specify one S3 URL and a local path, it downloads the S3 file to local disk (this routes the command to [dowloadFile](#downloadfile)).  Add `--recursive` (or `-r`) and it routes to [downloadFiles](#downloadfiles).  Examples:
+
+```sh
+# Download file from S3 to local disk
+s3 copy s3://my-bucket/s3dir/myfile.gif /path/to/image.gif
+
+# Download folder from S3 to local disk
+s3 copy s3://my-bucket/s3dir/uploaded/ /path/to/images/ --recursive
+```
+
+And if you specify a local path followed by a S3 URL, it uploads the file to S3 (this routes the command to [uploadFile](#uploadfile)).  Add `--recursive` (or `-r`) and it routes to [uploadFiles](#uploadfiles).  Examples:
+
+```sh
+# Upload file from disk to S3
+s3 copy /path/to/image.gif s3://my-bucket/s3dir/myfile.gif
+
+# Upload folder from disk to S3
+s3 copy /path/to/images/ s3://my-bucket/s3dir/uploaded/ --recursive
+```
+
+Of course, you can use the specific [copyFile](#copyfile), [copyFiles](#copyfiles), [dowloadFile](#downloadfile), [downloadFiles](#downloadfiles), [uploadFile](#uploadfile) or [uploadFiles](#uploadfiles) commands, but it's easier to just remember `copy` (or alias `cp`), which does them all.
+
+### copyFile
+
+```
+s3 copyFile S3_SRC_URL S3_DEST_URL [--KEY VALUE...]
 s3 copy S3_SRC_URL S3_DEST_URL [--KEY VALUE...]
 s3 cp S3_SRC_URL S3_DEST_URL [--KEY VALUE...]
 ```
 
-The `copy` command (alias `cp`) copies one S3 object to another S3 location.  This can copy between buckets as well.  Example:
+The `copyFile` command (alias `copy` or `cp`) copies one S3 object to another S3 location.  This can copy between buckets as well.  Example:
 
 ```sh
-s3 copy s3://my-bucket/users/oldkermit.json s3://my-bucket/users/newkermit.json
+s3 copyFile s3://my-bucket/users/oldkermit.json s3://my-bucket/users/newkermit.json
 ```
 
-The `copy` command accepts the following optional arguments:
+The `copyFile` command accepts the following optional arguments:
 
 | Property Name | Type | Description |
 |---------------|------|-------------|
@@ -483,17 +527,59 @@ The `copyFiles` command accepts the following optional arguments:
 ### move
 
 ```
+s3 move S3_URL_OR_LOCAL_PATH S3_URL_OR_LOCAL_PATH
+s3 mv S3_URL_OR_LOCAL_PATH S3_URL_OR_LOCAL_PATH
+```
+
+The `move` command (alias `mv`) is an omni-command -- a multi-command hub, which will route to other commads automatically, performing the correct action given the arguments and flags passed in.  It can move objects from S3 to S3, download files or folders from S3 (deleting the originals), or upload files or folders to S3 (deleting the originals).  You can pass any combination of S3 URL and S3 URL, S3 URL and local path, or local path and S3 URL.  S3 URLs are recognized by the prefix, which can be `s3://`, `s3:` or even `//` (protocol-relative).  If the argument doesn't match one of those patterns, it is assumed ot be a local filesystem path.  Here is how it works:
+
+If you specify two S3 URLs, one is moved to the other (this routes the command to [moveFile](#movefile)).  Add `--recursive` (or `-r`) and it routes to [moveFiles](#movefiles).  Examples:
+
+```sh
+# Move file from S3 to S3
+s3 move s3://my-bucket/users/oldkermit.json s3://my-bucket/users/newkermit.json
+
+# Move entire folder from S3 to S3
+s3 move s3://my-bucket/users/ s3://my-bucket/newusers/ --recursive
+```
+
+If you specify one S3 URL and a local path, it downloads the S3 file to local disk and deletes the original (this routes the command to [dowloadFile](#downloadfile) with the `--delete` flag).  Add `--recursive` (or `-r`) and it routes to [downloadFiles](#downloadfiles) with `--delete`.  Examples:
+
+```sh
+# Download file from S3 to local disk, delete original
+s3 move s3://my-bucket/s3dir/myfile.gif /path/to/image.gif
+
+# Download folder from S3 to local disk, delete original
+s3 move s3://my-bucket/s3dir/uploaded/ /path/to/images/ --recursive
+```
+
+And if you specify a local path followed by a S3 URL, it uploads the file to S3 and deletes the original (this routes the command to [uploadFile](#uploadfile) with the `--delete` flag).  Add `--recursive` (or `-r`) and it routes to [uploadFiles](#uploadfiles) with `--delete`.  Examples:
+
+```sh
+# Upload file from disk to S3, delete original
+s3 move /path/to/image.gif s3://my-bucket/s3dir/myfile.gif
+
+# Upload folder from disk to S3, delete original
+s3 move /path/to/images/ s3://my-bucket/s3dir/uploaded/ --recursive
+```
+
+Of course, you can use the specific [moveFile](#movefile), [moveFiles](#movefiles), [dowloadFile](#downloadfile) with `--delete`, [downloadFiles](#downloadfiles) with `--delete`, [uploadFile](#uploadfile) with `--delete`, or [uploadFiles](#uploadfiles) with `--delete`, but it's easier to just remember `move` (or alias `mv`), which does them all.
+
+### moveFile
+
+```
+s3 moveFile S3_SRC_URL S3_DEST_URL [--KEY VALUE...]
 s3 move S3_SRC_URL S3_DEST_URL [--KEY VALUE...]
 s3 mv S3_SRC_URL S3_DEST_URL [--KEY VALUE...]
 ```
 
-The `move` command (alias `mv`) moves one S3 object to another S3 location.  Essentially, it performs a [copy](#copy) followed by a [delete](#delete).  This can move between buckets as well.  Example:
+The `moveFile` command (alias `move` or `mv`) moves one S3 object to another S3 location.  Essentially, it performs a [copyFile](#copyfile) followed by a [deleteFile](#deletefile).  This can move between buckets as well.  Example:
 
 ```sh
-s3 move s3://my-bucket/users/oldkermit.json s3://my-bucket/users/newkermit.json
+s3 moveFile s3://my-bucket/users/oldkermit.json s3://my-bucket/users/newkermit.json
 ```
 
-The `move` command accepts the following optional arguments:
+The `moveFile` command accepts the following optional arguments:
 
 | Property Name | Type | Description |
 |---------------|------|-------------|
@@ -510,7 +596,7 @@ The `move` command accepts the following optional arguments:
 s3 moveFiles S3_SRC_URL/ S3_DEST_URL/ [--KEY VALUE...]
 ```
 
-The `moveFiles` command recursively moves multiple files / directories from S3 to another S3 location.  Essentially, it performs a [copy](#copy) followed by a [delete](#delete) on each file.  Example:
+The `moveFiles` command recursively moves multiple files / directories from S3 to another S3 location.  Essentially, it performs a [copyFile](#copyfile) followed by a [deleteFile](#deletefile) on each file.  Example:
 
 ```sh
 s3 moveFiles s3://my-bucket/users/ s3://my-bucket/newusers/
@@ -535,20 +621,21 @@ The `moveFiles` command accepts the following optional arguments:
 - Always include a trailing slash when specifying directories.
 - The AWS SDK does not preserve metadata, such as ACL and storage class, when moving objects.
 
-### delete
+### deleteFile
 
 ```
+s3 deleteFile S3_URL [--KEY VALUE...]
 s3 delete S3_URL [--KEY VALUE...]
 s3 rm S3_URL [--KEY VALUE...]
 ```
 
-The `delete` command (alias `rm`) deletes a single object from S3 given its key.  Please use caution here, as there is no way to undo a delete (unless you use versioned buckets I suppose).  Example:
+The `deleteFile` command (alias `delete` or `rm`) deletes a single object from S3 given its key.  Please use caution here, as there is no way to undo a delete (unless you use versioned buckets I suppose).  Example:
 
 ```sh
-s3 delete s3://my-bucket/s3dir/myfile.gif
+s3 deleteFile s3://my-bucket/s3dir/myfile.gif
 ```
 
-The `delete` command accepts the following optional arguments:
+The `deleteFile` command accepts the following optional arguments:
 
 | Property Name | Type | Description |
 |---------------|------|-------------|
@@ -583,22 +670,23 @@ The `deleteFiles` command accepts the following optional arguments:
 
 - Always include a trailing slash when specifying directories.
 
-### upload
+### uploadFile
 
 ```
+s3 uploadFile LOCAL_FILE S3_URL [--KEY VALUE...]
 s3 upload LOCAL_FILE S3_URL [--KEY VALUE...]
 s3 up LOCAL_FILE S3_URL [--KEY VALUE...]
 ```
 
-The `upload` command (alias `up`) uploads a single file from the local filesystem to an object in S3.  This uses streams and multi-part chunks internally, so it can handle files of any size while using very little memory.  Example:
+The `uploadFile` command (alias `upload` or `up`) uploads a single file from the local filesystem to an object in S3.  This uses streams and multi-part chunks internally, so it can handle files of any size while using very little memory.  Example:
 
 ```sh
-s3 upload /path/to/image.gif s3://my-bucket/s3dir/myfile.gif
+s3 uploadFile /path/to/image.gif s3://my-bucket/s3dir/myfile.gif
 ```
 
 Note that you can omit the filename portion of the S3 URL if you want.  Specifically, if the S3 URL ends with a slash (`/`) the library will automatically append the local filename to the end of the S3 key.
 
-The `upload` command accepts the following optional arguments:
+The `uploadFile` command accepts the following optional arguments:
 
 | Property Name | Type | Description |
 |---------------|------|-------------|
@@ -643,22 +731,23 @@ The `uploadFiles` command accepts the following optional arguments:
 
 - Always include a trailing slash when specifying directories.
 
-### download
+### downloadFile
 
 ```
+s3 downloadFile S3_URL LOCAL_FILE [--KEY VALUE...]
 s3 download S3_URL LOCAL_FILE [--KEY VALUE...]
 s3 dl S3_URL LOCAL_FILE [--KEY VALUE...]
 ```
 
-The `download` command (alias `dl`) downloads a single object from S3, and saves it to a local file on disk.  The local file's parent directories will be automatically created if needed.  This uses streams internally, so it can handle files of any size while using very little memory.  Example:
+The `downloadFile` command (alias `download` or `dl`) downloads a single object from S3, and saves it to a local file on disk.  The local file's parent directories will be automatically created if needed.  This uses streams internally, so it can handle files of any size while using very little memory.  Example:
 
 ```sh
-s3 download s3://my-bucket/s3dir/myfile.gif /path/to/image.gif
+s3 downloadFile s3://my-bucket/s3dir/myfile.gif /path/to/image.gif
 ```
 
 Note that you can omit the filename portion of the local file path if you want.  Specifically, if the local path ends with a slash (`/`) the library will automatically append the filename from the S3 key.
 
-The `download` command accepts the following optional arguments:
+The `downloadFile` command accepts the following optional arguments:
 
 | Property Name | Type | Description |
 |---------------|------|-------------|
