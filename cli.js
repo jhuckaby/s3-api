@@ -38,7 +38,8 @@ cli.mapArgs({
 	'dry_run': 'dry',
 	
 	'acl': 'params.ACL',
-	'class': 'params.StorageClass'
+	'class': 'params.StorageClass',
+	'debug': 'verbose'
 });
 
 // override defaults for progress bar signal handling
@@ -1042,11 +1043,16 @@ const app = {
 		let arch_file = args.localFile || this.dieUsage(this.cmd);
 		delete args.localFile;
 		
-		// allow archiveFile to have date/time placeholders, e.g. `my-backup-[yyyy]-[mm]-[dd].zip`
-		arch_file = Tools.formatDate( Tools.timeNow(), arch_file );
-		
 		// arch file needs to be absolute
 		arch_file = Path.resolve(arch_file);
+		
+		// determine the "true" base dir, outside of any macros
+		let base_dir = Path.dirname(arch_file);	
+		while (base_dir.match(/\[/)) { base_dir = Path.dirname(base_dir); }
+		if (args.expire && (base_dir === '/')) this.die("Cannot expire snapshots at root directory.");
+		
+		// allow archiveFile to have date/time placeholders, e.g. `my-backup-[yyyy]-[mm]-[dd].zip`
+		arch_file = Tools.formatDate( Tools.timeNow(), arch_file );
 		
 		// server must have appropriate binary somewhere in PATH or common dirs
 		let arch_cmd = '';
@@ -1066,6 +1072,9 @@ const app = {
 			this.s3.logDebug(9, "Dry-run, returning faux success");
 			return;
 		}
+		
+		this.s3.logDebug(9, "Taking snapshot of: " + args.remotePath);
+		this.s3.logDebug(9, "Saving archive to: " + arch_file);
 		
 		// reroute download to temp dir
 		args.localPath = Path.join( TEMP_DIR, 's3-temp-' + process.pid );
@@ -1114,8 +1123,9 @@ const app = {
 		// optionally expire old snaps
 		if (args.expire) {
 			let expire_at = Tools.timeNow(true) - Tools.getSecondsFromText(args.expire);
+			this.s3.logDebug(9, "Expiring old snapshots in: " + base_dir + " (" + args.expire + ")");
 			
-			Tools.findFilesSync( Path.dirname(arch_file), {
+			Tools.findFilesSync( base_dir, {
 				recurse: false,
 				filter: function(file, stats) {
 					return (stats.mtimeMs / 1000) <= expire_at;
@@ -1158,6 +1168,9 @@ const app = {
 			this.s3.logDebug(9, "Dry-run, returning faux success");
 			return;
 		}
+		
+		this.s3.logDebug(9, "Opening snapshot: " + arch_file);
+		this.s3.logDebug(9, "Restoring snapshot to: " + args.remotePath);
 		
 		// create temp dir
 		let temp_dir = Path.join( TEMP_DIR, 's3-temp-' + process.pid );
@@ -1251,6 +1264,10 @@ const app = {
 		let src_path = Path.resolve(args.localPath).replace(/\/$/, '');
 		delete args.localPath;
 		
+		// determine the "true" base dir, outside of any macros
+		let base_path = Path.dirname(args.key);	
+		while (base_path.match(/\[/)) { base_path = Path.dirname(base_path); }
+		
 		// allow s3 key to have date/time placeholders, e.g. `my-backup-[yyyy]-[mm]-[dd].zip`
 		args.key = Tools.formatDate( Tools.timeNow(), args.key );
 		
@@ -1275,6 +1292,9 @@ const app = {
 			this.s3.logDebug(9, "Dry-run, returning faux success");
 			return;
 		}
+		
+		this.s3.logDebug(9, "Making backup of: " + src_path);
+		this.s3.logDebug(9, "Target archive location: " + args.key);
 		
 		// show progress if we have a tty
 		if (cli.tty()) {
@@ -1312,9 +1332,11 @@ const app = {
 		// optionally expire old backups
 		if (args.expire) {
 			args.older = args.expire;
-			args.remotePath = Path.dirname(args.key);
+			args.remotePath = base_path + '/';
 			delete args.value;
 			delete args.progress;
+			
+			this.s3.logDebug(9, "Expiring old backups in: " + base_path + " (" + args.expire + ")");
 			
 			try {
 				await this.s3.deleteFiles(args);
@@ -1367,6 +1389,9 @@ const app = {
 			this.s3.logDebug(9, "Dry-run, returning faux success");
 			return;
 		}
+		
+		this.s3.logDebug(9, "Opening backup: " + args.key);
+		this.s3.logDebug(9, "Restoring backup to: " + dest_path);
 		
 		// show progress if we have a tty
 		if (cli.tty()) {
