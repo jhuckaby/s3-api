@@ -244,13 +244,17 @@ class S3API {
 		delete opts.updates;
 		
 		// first load the record
-		this.get( opts, function(err, data) {
+		this.get( opts, function(err, data, meta) {
 			if (err) return callback(err);
 			
 			// apply updates
 			for (let key in updates) {
 				Tools.setPath( data, key, updates[key] );
 			}
+			
+			// preserve metadata
+			if (!opts.params) opts.params = {};
+			if (meta.Metadata && Tools.numKeys(meta.Metadata)) opts.params.Metadata = meta.Metadata;
 			
 			// save the record
 			opts.value = data;
