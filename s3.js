@@ -1271,6 +1271,9 @@ class S3API {
 		if (!opts.value) return callback( new Error("Missing required 'value' (stream) property.") );
 		if (!isStream(opts.value)) return callback( new Error("The 'value' property must be a stream object.") );
 		
+		// allow s3 key to have date/time placeholders, e.g. `my-backup-[yyyy]-[mm]-[dd].gz`
+		opts.key = Tools.formatDate( Tools.timeNow(), opts.key );
+		
 		let params = Tools.mergeHashes( this.params || {}, opts.params || {} );
 		params.Bucket = opts.bucket;
 		params.Key = this.prefix + opts.key;
