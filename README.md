@@ -667,7 +667,7 @@ s3 COMMAND [ARG1 ARG2...] [--KEY VALUE --KEY VALUE...]
 Example command:
 
 ```sh
-s3 upload /path/to/image.gif s3://my-bucket/s3dir/myfile.gif
+s3 copy /path/to/image.gif s3://my-bucket/s3dir/myfile.gif
 ```
 
 Each command typically takes one or more plain arguments, and most also support a number of "switches" (key/value arguments specified using a double-dash, e.g. `--key value`).
@@ -689,20 +689,20 @@ This will install a global `s3` command in your PATH (typically in `/usr/bin`).
 The CLI allows you to easily upload and download files to/from S3 using the [uploadFile](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#uploadfile) and [downloadFile](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#downloadfile) commands.  However, it's easier to just use the omni [copy](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#copy) command which does everything.  Here are examples:
 
 ```sh
-# Upload single file
+# Upload file to S3
 s3 copy /path/to/image.gif s3://my-bucket/s3dir/myfile.gif
 
-# Download single file
+# Download file from S3
 s3 copy s3://my-bucket/s3dir/myfile.gif /path/to/image.gif
 ```
 
 You can also upload and download multiple files and entire directories using [uploadFiles](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#uploadfiles) and [downloadFiles](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#downloadfiles), or just add `--recursive` to the [copy](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#copy) command, which is easier to remember:
 
 ```sh
-# Upload entire folder
+# Upload entire folder to S3
 s3 copy /path/to/images/ s3://my-bucket/s3dir/uploaded/ --recursive
 
-# Download entire folder
+# Download entire folder from S3
 s3 copy s3://my-bucket/s3dir/uploaded/ /path/to/images/ --recursive
 ```
 
@@ -729,44 +729,44 @@ s3 copy /path/to/files/ s3://my-bucket/s3dir/uploaded/ --recursive --compress --
 s3 copy s3://my-bucket/s3dir/uploaded/ /path/to/files/ --recursive --decompress --strip '\.gz$'
 ```
 
-You can also copy & move files around from S3 to S3 (across buckets too, if you want) using [copy](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#copy) and [move](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#move):
+You can also copy & move files between two S3 locations (across buckets too, if you want) using [copy](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#copy) and [move](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#move):
 
 ```sh
-# Copy file
+# Copy file from S3 to S3
 s3 copy s3://my-bucket/users/oldkermit.json s3://my-bucket/users/newkermit.json
 
-# Move file
+# Move file from S3 to S3
 s3 move s3://my-bucket/users/oldkermit.json s3://my-bucket/users/newkermit.json
 ```
 
-And to copy or move multiple files and folders from S3 to S3, use [copyFiles](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#copyfiles) or [moveFiles](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#movefiles), or just add `--recursive`:
+And to copy or move multiple files and folders from S3 to S3, use [copyFiles](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#copyfiles) or [moveFiles](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#movefiles), or simply add `--recursive`:
 
 ```sh
-# Copy entire folder
+# Copy entire S3 folder
 s3 copy s3://my-bucket/users/ s3://my-bucket/newusers/ --recursive
 
-# Move entire folder
+# Move entire S3 folder
 s3 move s3://my-bucket/users/ s3://my-bucket/newusers/ --recursive
 ```
 
-You can delete single S3 files and entire folder trees using the [delete](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#delete) and [deleteFiles](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#deletefiles) commands:
+You can delete single S3 files and entire folder trees using the [delete](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#delete) and [deleteFiles](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#deletefiles) commands (or just add `--recursive` to [delete](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#delete)):
 
 ```sh
-# Delete file
+# Delete S3 file
 s3 delete s3://my-bucket/users/newkermit.json
 
-# Delete entire folder
+# Delete entire S3 folder
 s3 delete s3://my-bucket/s3dir/uploaded/ --recursive
 ```
 
 The recursive [deleteFiles](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#deletefiles) command also accepts all the filtering options that [uploadFiles](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#uploadfiles) and [downloadFiles](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#downloadfiles) use.  Example:
 
 ```sh
-# Delete selected files
+# Delete selected S3 files
 s3 delete s3://my-bucket/s3dir/uploaded/ --recursive --filespec '\.gif$' --older "15 days"
 ```
 
-To check if a file exists and view its metadata, use the [head](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#head) command:
+To check if a S3 file exists and view its metadata, use the [head](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#head) command:
 
 ```sh
 s3 head s3://my-bucket/s3dir/myfile.gif
@@ -804,6 +804,8 @@ To list all your S3 buckets, use the [listBuckets](https://github.com/jhuckaby/s
 s3 listBuckets
 ```
 
+These three commands all support JSON (`--json`) and CSV (`--csv`) output, as well as human-readable ASCII tables (the default).
+
 ### Key Value JSON
 
 If you want to use S3 as a key/value store, then this is the CLI for you.  The [put](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#put) and [get](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#get) commands store and fetch objects, serialized to/from JSON behind the scenes.  Examples:
@@ -815,7 +817,7 @@ s3 put s3://my-bucket/users/kermit.json '{"animal":"frog", "color":"green"}'
 # Build JSON record using dot.path.notation
 s3 put s3://my-bucket/users/kermit.json --value.animal "frog" --value.color "green"
 
-# Get JSON record
+# Get JSON record and pretty-print to console
 s3 get s3://my-bucket/users/kermit.json --pretty
 ```
 
@@ -835,7 +837,7 @@ The [backup](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#backup) co
 s3 backup /path/to/files/ s3://my-bucket/backups/mybackup-[yyyy]-[mm]-[dd].zip
 ```
 
-You can use date/time placeholders in the destination S3 key, to embed a custom timestamp.
+You can use date/time placeholders in the destination S3 key, to embed a custom timestamp.  You can even put them in folder names, e.g. `s3://my-bucket/backups/[yyyy]/[mm]/mybackup-[yyyy]-[mm]-[dd].zip`.
 
 If you make backups on a schedule, and only want to keep a certain amount in S3, add an `--expire` argument with a relative time (e.g. `30 days`) and the `backup` command will automatically delete archives that fall outside the specified date range.
 
@@ -859,7 +861,7 @@ A "snapshot" works in the opposite direction of a backup.  A snapshot is a effec
 s3 snapshot s3://my-bucket/s3dir/images/ /path/to/snapshot-[yyyy]-[mm]-[dd].zip
 ```
 
-This would download and compress the entire `s3://my-bucket/s3dir/images/` location and everything under it, and write it to `/path/to/snapshot-[yyyy]-[mm]-[dd].zip` on local disk.  You can use date/time placeholders in the destination filename, to embed a custom timestamp.
+This would download and compress the entire `s3://my-bucket/s3dir/images/` location and everything under it, and write it to `/path/to/snapshot-[yyyy]-[mm]-[dd].zip` on local disk.  You can use date/time placeholders in the destination filename and/or folder names.
 
 If you take snapshots on a schedule, and only want to keep a certain amount on disk, add an `--expire` argument with a relative time (e.g. `30 days`) and the `snapshot` command will automatically delete snapshots that fall outside the specified date range.
 
@@ -877,7 +879,7 @@ s3 restoreSnapshot /path/to/snapshot-2024-05-22.zip s3://my-bucket/s3dir/images/
 
 ### Config File
 
-The CLI supports an optional configuration file, which should live in your home directory and named `.s3-config.json` (with a leading period).  Example file path for root:
+The CLI supports an optional configuration file, which should live in your home directory and be named `.s3-config.json` (with a leading period).  Example file path for root:
 
 ```
 /root/.s3-config.json
@@ -892,7 +894,7 @@ The file should be in JSON format, and can store one or more [Common Arguments](
 }
 ```
 
-You can also use dot.path.notation here to configure things such as AWS credentials, a default S3 storage class, and/or default ACL for all S3 objects.  Example:
+You can also use dot.path.notation in this file to configure things such as AWS credentials, a default S3 storage class, and/or default ACL for all S3 objects.  Example:
 
 ```json
 {
