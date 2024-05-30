@@ -1036,6 +1036,7 @@ const app = {
 		let self = this;
 		this.shiftS3Spec('bucket', 'remotePath') || this.dieUsage(this.cmd);
 		this.shiftOther('localFile') || this.dieUsage(this.cmd);
+		this.addMultiFilter();
 		
 		delete args.other;
 		this.printArgSummary();
@@ -1154,6 +1155,7 @@ const app = {
 		// { remotePath, localFile, delete?, threads? }
 		this.shiftOther('localFile') || this.dieUsage(this.cmd);
 		this.shiftS3Spec('bucket', 'remotePath') || this.dieUsage(this.cmd);
+		this.addMultiFilter();
 		
 		delete args.other;
 		this.printArgSummary();
