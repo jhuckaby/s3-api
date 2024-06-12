@@ -822,6 +822,7 @@ class S3API {
 	 * @param {(number|string)} [opts.older] - Only include files older than the specified epoch time or relative time.
 	 * @param {(number|string)} [opts.newer] - Only include files newer than the specified epoch time or relative time.
 	 * @param {number} [opts.maxLines] - Optionally limit the number of matched lines to the specified value.
+	 * @param {number} [opts.threads=1] - Optionally increase the threads to improve performance.
 	 * @param {string} [opts.bucket] - Optionally specify the S3 bucket where the folders reside.
 	 * @returns {Promise<Object>} - A promise that resolves to a custom object.
 	 */
@@ -845,6 +846,7 @@ class S3API {
 		if (!opts.filespec) opts.filespec = /.*/;
 		if (!opts.match) opts.match = /.*/;
 		if (!opts.filter) opts.filter = function() { return true; };
+		if (!opts.threads) opts.threads = 1;
 		
 		if (opts.older) {
 			// convert older to filter func with mtime
@@ -878,7 +880,7 @@ class S3API {
 					.then( function(data) {
 						let items = data.Contents || [];
 						
-						async.eachSeries( items,
+						async.eachLimit( items, opts.threads, 
 							function(item, callback) {
 								let key = item.Key;
 								let bytes = item.Size;
@@ -887,6 +889,7 @@ class S3API {
 								
 								if (!opts.filter(file)) return process.nextTick(callback);
 								if (!Path.basename(key).match(opts.filespec)) return process.nextTick(callback);
+								if (done) return process.nextTick(callback);
 								
 								let gs_opts = Tools.mergeHashes(opts, { key: key.replace(match_pre, '') } );
 								self.logDebug(9, "Grepping file: " + gs_opts.key, file);

@@ -454,6 +454,7 @@ The `grep` command accepts the following optional arguments:
 | `decompress` | Boolean | Automatically decompress all files using gunzip during download.  Disabled by default. |
 | `match` | RegExp | Optionally filter lines to only those matching the provided regular expression. |
 | `max` | Number | Optionally limit the number of matched lines to the specified value. |
+| `threads` | Integer | Optionally increase concurrency to improve performance.  Defaults to `1` thread. |
 | `quiet` | Boolean | Include this argument to suppress all output except the matched lines. |
 
 **Notes:**

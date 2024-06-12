@@ -431,6 +431,7 @@ The method accepts an object containing the following properties:
 | `iterator` | Function | A synchronous function that is called for every matched line.  It is passed the line as a string, and an object containing file metadata (see below). |
 | `decompress` | Boolean | Automatically decompress all files using gunzip during download.  Disabled by default. |
 | `maxLines` | Number | Optionally limit the number of matched lines to the specified value. |
+| `threads` | Integer | Optionally increase concurrency to improve performance.  Defaults to `1` thread. |
 | `bucket` | String | Optionally specify the S3 bucket where the records are stored.  This is usually set in the class constructor. |
 
 Each item object passed to the iterator will contain the following properties:
