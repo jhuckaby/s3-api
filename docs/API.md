@@ -18,6 +18,7 @@ This document contains a complete API reference for **s3-api**.
 	* [list](#list)
 	* [listFolders](#listfolders)
 	* [listBuckets](#listbuckets)
+	* [grepFiles](#grepfiles)
 	* [walk](#walk)
 	* [copyFile](#copyfile)
 	* [copyFiles](#copyfiles)
@@ -394,9 +395,61 @@ The response object will contain the following keys, which you can destruct into
 |---------------|------|-------------|
 | `buckets` | Array | An array of S3 bucket names. |
 
+### grepFiles
+
+The `grepFiles()` method fires an iterator function for *every line* inside every remote S3 object that exists under a specified key prefix, and optionally match a specified filter.  It will automatically loop and paginate as required.  The iterator is fired as a synchronous call.  Example:
+
+```js
+try {
+	// find matching lines inside remote log files
+	await s3.grepFiles({ 
+		remotePath: 's3dir/logfiles/', 
+		filespec: /\.log\.gz$/,
+		match: /Incoming Request/,
+		decompress: true,
+		
+		iterator: function(line, file) {
+			console.log("Matched line! ", line, file);
+		} 
+	});	
+}
+catch (err) {
+	// handle error here
+}
+```
+
+The method accepts an object containing the following properties:
+
+| Property Name | Type | Description |
+|---------------|------|-------------|
+| `remotePath` | String | The base S3 path to look for files under.  This may be prepended with a `prefix` if set on the class instance. |
+| `filespec` | RegExp | Optionally filter the result files using a regular expression, matched on the filenames. |
+| `filter` | Function | Optionally provide a filter function to select which files to grep. |
+| `older` | Number | Optionally filter the S3 files based on their modification date, i.e. they must be *older* than the specified date/time or relative time, e.g. "7 days". |
+| `newer` | Number | Optionally filter the S3 files based on their modification date, i.e. they must be *newer* than the specified date/time or relative time, e.g. "7 days". |
+| `match` | RegExp | Optionally filter lines to only those matching the provided regular expression. |
+| `iterator` | Function | A synchronous function that is called for every matched line.  It is passed the line as a string, and an object containing file metadata (see below). |
+| `decompress` | Boolean | Automatically decompress all files using gunzip during download.  Disabled by default. |
+| `maxLines` | Number | Optionally limit the number of matched lines to the specified value. |
+| `bucket` | String | Optionally specify the S3 bucket where the records are stored.  This is usually set in the class constructor. |
+
+Each item object passed to the iterator will contain the following properties:
+
+| Property Name | Type | Description |
+|---------------|------|-------------|
+| `key` | String | The object's full S3 key (including prefix if applicable). |
+| `size` | Integer | The objects's size in bytes. |
+| `mtime` | Integer | The object's modification date, as Epoch seconds. |
+
+**Notes:** 
+
+- Always include a trailing slash when specifying directories.
+- You can abort a grep in progress by returning `false` from your iterator function.
+- Files are streamed and [line-read](https://nodejs.org/api/readline.html#readline), so very little memory will be used, even for huge files, and even for compressed files.
+
 ### walk
 
-The `walk()` method fires an interator for every remote S3 object that exists under a specified key prefix, and optionally match a specified filter.  It will automatically loop and paginate as required.  The iterator is fired as a synchronous call.  Example:
+The `walk()` method fires an iterator function for every remote S3 object that exists under a specified key prefix, and optionally match a specified filter.  It will automatically loop and paginate as required.  The iterator is fired as a synchronous call.  Example:
 
 ```js
 try {

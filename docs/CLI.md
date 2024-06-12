@@ -26,6 +26,7 @@ Please note that the standard [AWS S3 CLI](https://docs.aws.amazon.com/cli/lates
 	* [list](#list)
 	* [listFolders](#listfolders)
 	* [listBuckets](#listbuckets)
+	* [grep](#grep)
 	* [copy](#copy)
 	* [copyFile](#copyfile)
 	* [copyFiles](#copyfiles)
@@ -427,6 +428,40 @@ The `listBuckets` command accepts the following optional arguments:
 | `json` | Boolean | Optionally return the results in JSON format, rather than an ASCII table.  Combine with `--quiet` for pure JSON output. |
 | `csv` | Boolean | Optionally return the results in CSV format, rather than an ASCII table.  Combine with `--quiet` for pure CSV output. |
 
+### grep
+
+```
+s3 grep REGEX S3_URL/ [--KEY VALUE...]
+```
+
+The `grep` command recursively searches inside S3 files starting at a specified base path, matching a provided regular expression on each line.  Matched lines are printed to the console along with the S3 file path.  You can also provide additional filters for only looking inside some files, based on their file patterns, size or modification dates.  Example:
+
+```sh
+s3 grep 'Incoming Request' s3://my-bucket/s3dir/logfiles/ --filespec '\.log\.gz$' --decompress
+```
+
+The `grep` command accepts the following optional arguments:
+
+| Property Name | Type | Description |
+|---------------|------|-------------|
+| `filespec` | RegExp | Optionally filter the S3 filenames using a regular expression (matched only on the filenames). |
+| `include` | RegExp | Optionally restrict files using an inclusion regular expression pattern (matched on the whole file paths). |
+| `exclude` | RegExp | Optionally exclude files using an exclusion regular expression pattern (matched on the whole file paths). |
+| `newer` | Mixed | Optionally filter files to those modified after a specified date, or delta time.  Dates should be parsable by JavaScript, delta times can be "7 days", etc. |
+| `older` | Mixed | Optionally filter files to those modified before a specified date, or delta time.  Dates should be parsable by JavaScript, delta times can be "7 days", etc. |
+| `larger` | Mixed | Optionally filter files to those larger than a specified size, which can be raw bytes, or a string such as "50K", "500MB", "32GB", "1TB", etc. |
+| `smaller` | Mixed | Optionally filter files to those smaller than a specified size, which can be raw bytes, or a string such as "50K", "500MB", "32GB", "1TB", etc. |
+| `decompress` | Boolean | Automatically decompress all files using gunzip during download.  Disabled by default. |
+| `match` | RegExp | Optionally filter lines to only those matching the provided regular expression. |
+| `max` | Number | Optionally limit the number of matched lines to the specified value. |
+| `quiet` | Boolean | Include this argument to suppress all output except the matched lines. |
+
+**Notes:**
+
+- Always include a trailing slash when specifying directories.
+- For the regular expression, single-quotes are recommended so you don't need to escape backslashes.
+- Files are streamed and [line-read](https://nodejs.org/api/readline.html#readline), so very little memory will be used, even for huge files, and even for compressed files.
+
 ### copy
 
 ```
@@ -775,7 +810,7 @@ The `downloadFiles` command accepts the following optional arguments:
 | `larger` | Mixed | Optionally filter files to those larger than a specified size, which can be raw bytes, or a string such as "50K", "500MB", "32GB", "1TB", etc. |
 | `smaller` | Mixed | Optionally filter files to those smaller than a specified size, which can be raw bytes, or a string such as "50K", "500MB", "32GB", "1TB", etc. |
 | `threads` | Integer | Optionally increase concurrency to improve performance.  Defaults to `1` thread. |
-| `decompress` | Boolean | Automatically decompress all files using gunzip during upload.  Disabled by default. |
+| `decompress` | Boolean | Automatically decompress all files using gunzip during download.  Disabled by default. |
 | `strip` | RegExp | Optionally strip a suffix from every destination filename, e.g. `\.gz$` to strip the `.gz` suffix off of compressed files. |
 | `delete` | Boolean | Optionally delete the S3 files after download is complete. |
 

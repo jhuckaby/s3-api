@@ -39,6 +39,7 @@ Here is the table of contents for this document:
 		+ [Threads](#threads)
 	* [Pinging Objects](#pinging-objects)
 	* [Listing Objects](#listing-objects)
+	* [Grepping Objects](#grepping-objects)
 	* [Deleting Objects](#deleting-objects)
 	* [Using Buffers](#using-buffers)
 	* [Using Streams](#using-streams)
@@ -53,6 +54,7 @@ Here is the table of contents for this document:
 	* [File Management](#file-management)
 	* [Raw Streams](#raw-streams)
 	* [Listing](#listing)
+	* [Grepping](#grepping)
 	* [Key Value JSON](#key-value-json)
 	* [Backups](#backups)
 	* [Snapshots](#snapshots)
@@ -375,6 +377,31 @@ catch (err) {
 	// handle error here
 }
 ```
+
+### Grepping Objects
+
+You can recurstively search inside of your S3 files for a regular expression using the [grepFiles()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#grepfiles) method.  This will fire a custom iterator function for every matched line.  Example:
+
+```js
+try {
+	// find matching lines inside remote log files
+	await s3.grepFiles({ 
+		remotePath: 's3dir/logfiles/', 
+		filespec: /\.log\.gz$/,
+		match: /Incoming Request/,
+		decompress: true,
+		
+		iterator: function(line, file) {
+			console.log("Matched line! ", line, file);
+		} 
+	});	
+}
+catch (err) {
+	// handle error here
+}
+```
+
+Files are streamed and [line-read](https://nodejs.org/api/readline.html#readline), so very little memory will be used, even for huge files, and even for compressed files.
 
 ### Deleting Objects
 
@@ -805,6 +832,20 @@ s3 listBuckets
 ```
 
 These three commands all support JSON (`--json`) and CSV (`--csv`) output, as well as human-readable ASCII tables (the default).
+
+### Grepping
+
+Need to search for a regular expression match inside your S3 files?  Use the [grep](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#grep) command:
+
+```sh
+s3 grep 'Incoming Request' s3://my-bucket/s3dir/logfiles/
+```
+
+If your S3 files are gzipped, add the `--decompress` flag:
+
+```sh
+s3 grep 'Incoming Request' s3://my-bucket/s3dir/logfiles/ --filespec '\.log\.gz$' --decompress
+```
 
 ### Key Value JSON
 

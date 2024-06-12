@@ -6,6 +6,7 @@
 const fs = require('fs');
 const zlib = require('zlib');
 const Path = require('path');
+const readline = require('readline');
 const mime = require('mime-types');
 const Tools = require('pixl-tools');
 const LRU = require('pixl-cache');
@@ -410,10 +411,10 @@ class S3API {
 			if (err) return callback(err, null, null);
 			
 			// setup progress
-			var progressHandler = opts.progress || function() {};
+			let progressHandler = opts.progress || function() {};
 			delete opts.progress; // don't pass this down to copy
-			var total = bytes;
-			var loaded = 0;
+			let total = bytes;
+			let loaded = 0;
 			
 			self.logDebug(8, "Copying " + files.length + " files", files);
 			
@@ -492,10 +493,10 @@ class S3API {
 			if (err) return callback(err, null, null);
 			
 			// setup progress
-			var progressHandler = opts.progress || function() {};
+			let progressHandler = opts.progress || function() {};
 			delete opts.progress; // don't pass this down to move
-			var total = bytes;
-			var loaded = 0;
+			let total = bytes;
+			let loaded = 0;
 			
 			self.logDebug(8, "Moving " + files.length + " files", files);
 			
@@ -604,7 +605,8 @@ class S3API {
 	 * @param {string} opts.remotePath - The base S3 path to look for files under.
 	 * @param {RegExp} [opts.filespec] - Optionally filter the result files using a regular expression, matched on the filenames.
 	 * @param {Function} [opts.filter] - Optionally provide a filter function to select which files to include.
-	 * @param {(number|string)} [opts.older] - Optionally filter the S3 files based on their modification date.
+	 * @param {(number|string)} [opts.older] - Only include files older than the specified epoch time or relative time.
+	 * @param {(number|string)} [opts.newer] - Only include files newer than the specified epoch time or relative time.
 	 * @param {boolean} [opts.emptyFolders=false] - Optionally include 0-byte empty folder markers.
 	 * @param {string} [opts.bucket] - Optionally specify the S3 bucket where the folders reside.
 	 * @returns {Promise<ListResponse>} - A promise that resolves to a custom object.
@@ -623,6 +625,7 @@ class S3API {
 		
 		if (typeof(opts) == 'string') opts = { remotePath: opts };
 		if (opts.filter && opts.older) return callback( new Error("The 'filter' and 'older' properties are mutually exclusive.") );
+		if (opts.filter && opts.newer) return callback( new Error("The 'filter' and 'newer' properties are mutually exclusive.") );
 		if (!opts.bucket) opts.bucket = this.bucket;
 		if (!opts.bucket) return callback( new Error("Missing required 'bucket' (string) property.") );
 		if (!opts.remotePath) opts.remotePath = '';
@@ -632,7 +635,12 @@ class S3API {
 		if (opts.older) {
 			// convert older to filter func with mtime
 			if (typeof(opts.older) == 'string') opts.older = Tools.getSecondsFromText( opts.older );
-			opts.filter = function(file) { return file.mtime <= now - opts.older; };
+			opts.filter = function(file) { return file.mtime < now - opts.older; };
+		}
+		else if (opts.newer) {
+			// convert newer to filter func with mtime
+			if (typeof(opts.newer) == 'string') opts.newer = Tools.getSecondsFromText( opts.newer );
+			opts.filter = function(file) { return file.mtime > now - opts.newer; };
 		}
 		
 		let params = Tools.mergeHashes( this.params || {}, opts.params || {} );
@@ -708,7 +716,8 @@ class S3API {
 	 * @param {Function} opts.iterator - A synchronous function that is called for every remote S3 file.
 	 * @param {RegExp} [opts.filespec] - Optionally filter the result files using a regular expression, matched on the filenames.
 	 * @param {Function} [opts.filter] - Optionally provide a filter function to select which files to return.
-	 * @param {(number|string)} [opts.older] - Optionally filter the S3 files based on their modification date.
+	 * @param {(number|string)} [opts.older] - Only include files older than the specified epoch time or relative time.
+	 * @param {(number|string)} [opts.newer] - Only include files newer than the specified epoch time or relative time.
 	 * @param {string} [opts.bucket] - Optionally specify the S3 bucket where the folders reside.
 	 * @returns {Promise<Object>} - A promise that resolves to a custom object.
 	 */
@@ -722,6 +731,8 @@ class S3API {
 		let num_calls = 0;
 		let now = Tools.timeNow(true);
 		
+		if (opts.filter && opts.older) return callback( new Error("The 'filter' and 'older' properties are mutually exclusive.") );
+		if (opts.filter && opts.newer) return callback( new Error("The 'filter' and 'newer' properties are mutually exclusive.") );
 		if (!opts.bucket) opts.bucket = this.bucket;
 		if (!opts.bucket) return callback( new Error("Missing required 'bucket' (string) property.") );
 		if (!opts.iterator) return callback( new Error("Missing required 'iterator' (function) property.") );
@@ -732,7 +743,12 @@ class S3API {
 		if (opts.older) {
 			// convert older to filter func with mtime
 			if (typeof(opts.older) == 'string') opts.older = Tools.getSecondsFromText( opts.older );
-			opts.filter = function(file) { return file.mtime <= now - opts.older; };
+			opts.filter = function(file) { return file.mtime < now - opts.older; };
+		}
+		else if (opts.newer) {
+			// convert newer to filter func with mtime
+			if (typeof(opts.newer) == 'string') opts.newer = Tools.getSecondsFromText( opts.newer );
+			opts.filter = function(file) { return file.mtime > now - opts.newer; };
 		}
 		
 		let params = Tools.mergeHashes( this.params || {}, opts.params || {} );
@@ -787,6 +803,159 @@ class S3API {
 				self.logDebug(9, "S3 walk complete", {
 					prefix: params.Prefix,
 					calls: num_calls
+				});
+				
+				// break out of promise context
+				process.nextTick( function() { callback(null); } );
+			}
+		); // whilst
+	}
+	
+	/** 
+	 * Recursively grep S3 files and fire sync iterator for every matched line inside of all matched files.
+	 * @param {Object} opts - The options object for the walk operation.
+	 * @param {string} opts.remotePath - The base S3 path to look for files under.
+	 * @param {RegExp} [opts.match] - An optional regular expression to match on lines.  Default is to match all lines.
+	 * @param {Function} opts.iterator - A synchronous function that is called for every matched line.  Return `false` to abort.
+	 * @param {RegExp} [opts.filespec] - Optionally filter the result files using a regular expression, matched on the filenames.
+	 * @param {Function} [opts.filter] - Optionally provide a filter function to select which files to return.
+	 * @param {(number|string)} [opts.older] - Only include files older than the specified epoch time or relative time.
+	 * @param {(number|string)} [opts.newer] - Only include files newer than the specified epoch time or relative time.
+	 * @param {number} [opts.maxLines] - Optionally limit the number of matched lines to the specified value.
+	 * @param {string} [opts.bucket] - Optionally specify the S3 bucket where the folders reside.
+	 * @returns {Promise<Object>} - A promise that resolves to a custom object.
+	 */
+	grepFiles(opts, callback) {
+		// fire sync iterator for every matched line in S3 given prefix
+		// this repeatedly calls ListObjectsV2 for lists > 1000
+		// opts: { bucket, remotePath, filespec, filter, match, iterator }
+		// result: { }
+		let self = this;
+		let done = false;
+		let num_files = 0;
+		let num_lines = 0;
+		let now = Tools.timeNow(true);
+		
+		if (opts.filter && opts.older) return callback( new Error("The 'filter' and 'older' properties are mutually exclusive.") );
+		if (opts.filter && opts.newer) return callback( new Error("The 'filter' and 'newer' properties are mutually exclusive.") );
+		if (!opts.bucket) opts.bucket = this.bucket;
+		if (!opts.bucket) return callback( new Error("Missing required 'bucket' (string) property.") );
+		if (!opts.iterator) return callback( new Error("Missing required 'iterator' (function) property.") );
+		if (!opts.remotePath) opts.remotePath = '';
+		if (!opts.filespec) opts.filespec = /.*/;
+		if (!opts.match) opts.match = /.*/;
+		if (!opts.filter) opts.filter = function() { return true; };
+		
+		if (opts.older) {
+			// convert older to filter func with mtime
+			if (typeof(opts.older) == 'string') opts.older = Tools.getSecondsFromText( opts.older );
+			opts.filter = function(file) { return file.mtime < now - opts.older; };
+		}
+		else if (opts.newer) {
+			// convert newer to filter func with mtime
+			if (typeof(opts.newer) == 'string') opts.newer = Tools.getSecondsFromText( opts.newer );
+			opts.filter = function(file) { return file.mtime > now - opts.newer; };
+		}
+		
+		let params = Tools.mergeHashes( this.params || {}, opts.params || {} );
+		params.Bucket = opts.bucket;
+		params.Prefix = this.prefix + opts.remotePath;
+		params.MaxKeys = 1000;
+		
+		let match_pre = this.prefix ? new RegExp('^' + Tools.escapeRegExp(this.prefix)) : /(?!)/;
+		
+		this.logDebug(8, "Grepping S3 files with prefix: " + params.Prefix, opts);
+		let tracker = this.perf ? this.perf.begin('s3_list') : null;
+		
+		async.whilst(
+			function() { 
+				return !done; 
+			},
+			function(callback) {
+				self.logDebug(9, "Walking chunk", params);
+				
+				self.s3.send( new S3.ListObjectsV2Command(params) )
+					.then( function(data) {
+						let items = data.Contents || [];
+						
+						async.eachSeries( items,
+							function(item, callback) {
+								let key = item.Key;
+								let bytes = item.Size;
+								let mtime = item.LastModified.getTime() / 1000;
+								let file = { key: key, size: bytes, mtime: mtime };
+								
+								if (!opts.filter(file)) return process.nextTick(callback);
+								if (!Path.basename(key).match(opts.filespec)) return process.nextTick(callback);
+								
+								let gs_opts = Tools.mergeHashes(opts, { key: key.replace(match_pre, '') } );
+								self.logDebug(9, "Grepping file: " + gs_opts.key, file);
+								
+								self.getStream( gs_opts, function(err, stream) {
+									if (err) return callback(err);
+									
+									stream.on('error', function(err) {
+										if (!callback) return;
+										err = new Error( "S3 Stream Error: " + file.key + ": " + (err.message || err));
+										if (callback) callback(err);
+										callback = null;
+									});
+									
+									let reader = readline.createInterface({ input: stream });
+									
+									reader.on('line', function(line) {
+										// process each line
+										if (done) return;
+										
+										if (line.match(opts.match)) {
+											num_lines++;
+											if (opts.iterator(line, file) === false) {
+												self.logDebug(6, "Abort by user request (iterator returned false)");
+												done = true;
+												return;
+											}
+											if (opts.maxLines && (num_lines >= opts.maxLines)) {
+												self.logDebug(6, "Abort by user request (max lines reached)");
+												done = true;
+												return;
+											}
+										}
+									}); // line
+									
+									reader.on('close', function() {
+										// end of stream
+										num_files++;
+										if (callback) {
+											if (done) callback("ABORT");
+											else callback();
+										}
+										callback = null;
+									});
+								} ); // getStream
+							},
+							function(err) {
+								// check for end of key list
+								if (!data.IsTruncated || !items.length) done = true;
+								else {
+									// advance to next chunk
+									params.StartAfter = items[ items.length - 1 ].Key;
+								}
+								callback();
+							}
+						); // async.eachSeries
+					} )
+					.catch( function(err) {
+						callback( err );
+					} );
+			},
+			function(err) {
+				if (tracker) tracker.end();
+				if (err) return process.nextTick( function() { callback(err); });
+				
+				self.logDebug(9, "S3 grep complete", {
+					prefix: params.Prefix,
+					files: num_files,
+					lines: num_lines
 				});
 				
 				// break out of promise context
@@ -1034,10 +1203,10 @@ class S3API {
 			}
 			
 			// calculate total size and setup progress
-			var progressHandler = opts.progress || function() {};
+			let progressHandler = opts.progress || function() {};
 			delete opts.progress; // don't pass this down to uploadFile
-			var total = 0;
-			var loaded = 0;
+			let total = 0;
+			let loaded = 0;
 			files.forEach( function(file) { total += file.size; } );
 			
 			self.logDebug(8, "Uploading " + files.length + " files (" + Tools.getTextFromBytes(total) + ")", files);
@@ -1095,10 +1264,10 @@ class S3API {
 			opts.remotePath = opts.remotePath.replace(/\/$/, '');
 			
 			// setup progress
-			var progressHandler = opts.progress || function() {};
+			let progressHandler = opts.progress || function() {};
 			delete opts.progress; // don't pass this down to downloadFile
-			var total = bytes;
-			var loaded = 0;
+			let total = bytes;
+			let loaded = 0;
 			
 			self.logDebug(8, "Downloading " + files.length + " files", files);
 			
@@ -1132,7 +1301,8 @@ class S3API {
 	 * @param {string} opts.remotePath - The base S3 path to delete files from.
 	 * @param {RegExp} [opts.filespec] - Optionally filter the S3 files using a regular expression, matched on the filenames.
 	 * @param {Function} [opts.filter] - Optionally provide a filter function to select which files to include.
-	 * @param {(number|string)} [opts.older] - Optionally filter the S3 files based on their modification date.
+	 * @param {(number|string)} [opts.older] - Only include files older than the specified epoch time or relative time.
+	 * @param {(number|string)} [opts.newer] - Only include files newer than the specified epoch time or relative time.
 	 * @param {number} [opts.threads=1] - Optionally increase the threads to improve performance.
 	 * @param {string} [opts.bucket] - Optionally specify the S3 bucket where the folders reside.
 	 * @param {Function} [opts.progress] - A function to receive progress udpates.
@@ -1149,10 +1319,10 @@ class S3API {
 			if (err) return callback(err, null, null);
 			
 			// setup progress
-			var progressHandler = opts.progress || function() {};
+			let progressHandler = opts.progress || function() {};
 			delete opts.progress; // don't pass this down to delete
-			var total = bytes;
-			var loaded = 0;
+			let total = bytes;
+			let loaded = 0;
 			
 			self.logDebug(8, "Deleting " + files.length + " files", files);
 			
@@ -1358,8 +1528,8 @@ class S3API {
 				// break out of promise context
 				process.nextTick( function() {
 					if (tracker) tracker.end();
-					var count = 0;
-					var len = parseInt( data.ContentLength || 0 );
+					let count = 0;
+					let len = parseInt( data.ContentLength || 0 );
 					self.logDebug(9, "Stream started: " + opts.key, { size: len });
 					
 					if (opts.progress) {
@@ -1479,6 +1649,7 @@ asyncify( S3API, {
 	listFolders: ['folders', 'files'],
 	list: ['files', 'bytes'],
 	walk: [],
+	grepFiles: [],
 	copyFile: ['meta'],
 	copyFiles: ['meta'],
 	moveFile: ['meta'],

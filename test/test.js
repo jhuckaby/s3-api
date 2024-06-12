@@ -300,12 +300,28 @@ exports.tests = [
 		
 		test.ok( !!files, "files is defined" );
 		test.ok( files.length == 5, "Expected 5 files, got: " + files.length );
+		// test.debug( "Files: ", files );
 		
 		files.forEach( function(file) {
 			test.ok( !!file.key, "Expected file.key to be truthy" );
 			test.ok( !!file.size, "Expected file.size to be truthy" );
 			test.ok( !!file.mtime, "Expected file.mtime to be truthy" );
 		} );
+		
+		test.done();
+	},
+	
+	async function testGrep(test) {
+		// test a multi-file grep
+		test.expect(1);
+		
+		await s3.grepFiles({
+			filespec: /\.json$/,
+			match: /animal/,
+			iterator: function(line, file) {
+				test.ok( !!line.match(/animal/) );
+			}
+		});
 		
 		test.done();
 	},

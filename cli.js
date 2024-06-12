@@ -92,6 +92,7 @@ const CMD_HELP_TEXT = {
 	"list": "s3 list S3_URL [--KEY VALUE...]",
 	"listFolders": "s3 listFolders S3_URL [--KEY VALUE...]",
 	"listBuckets": "s3 listBuckets [--KEY VALUE...]",
+	"grep": "s3 grep REGEX S3_URL/",
 	"copy": "s3 copy S3_URL_OR_LOCAL_PATH S3_URL_OR_LOCAL_PATH",
 	"copyFile": "s3 copyFile S3_SRC_URL S3_DEST_URL [--KEY VALUE...]",
 	"copyFiles": "s3 copyFiles S3_SRC_URL/ S3_DEST_URL/ [--KEY VALUE...]",
@@ -133,6 +134,9 @@ const app = {
 	async run() {
 		// main entry point
 		let self = this;
+		
+		// Prevent EPIPE in case we get closed early, e.g. | head
+		process.stdout.on('error', function() { process.exit(0); });
 		
 		// copy some args over to S3 API
 		let s3_args = {};
@@ -1027,6 +1031,31 @@ const app = {
 		await this.callS3API(this.cmd);
 		
 		cli.progress.end();
+	},
+	
+	async cmd_grep() {
+		// recursively grep s3 files for match
+		let self = this;
+		this.shiftOther('match') || this.dieUsage(this.cmd);
+		this.shiftS3Spec('bucket', 'remotePath') || this.dieUsage(this.cmd);
+		this.addMultiFilter();
+		
+		delete args.other;
+		this.printArgSummary();
+		
+		if (args.match) args.match = new RegExp(args.match);
+		if (args.max) { args.maxLines = args.max; delete args.max; }
+		
+		args.iterator = function(line, file) {
+			console.log( yellow(file.key + ": ") + line.trim() );
+		};
+		
+		try {
+			await this.s3.grepFiles(args);
+		}
+		catch (err) {
+			this.die(err);
+		}
 	},
 	
 	async cmd_snapshot() {
