@@ -575,6 +575,11 @@ class S3API {
 					return { key: item.Key, size: item.Size, mtime: item.LastModified.getTime() / 1000 };
 				} );
 				
+				// skip over 0-byte folder markers
+				files = files.filter( function(file) {
+					return file.size || !file.key.match(/\/$/);
+				} );
+				
 				self.logDebug(9, "S3 subfolder listing complete (" + folders.length + " paths, " + files.length + " files)", {
 					prefix: params.Prefix
 				});
