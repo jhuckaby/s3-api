@@ -405,12 +405,12 @@ Files are streamed and [line-read](https://nodejs.org/api/readline.html#readline
 
 ### Deleting Objects
 
-To delete an object from S3, simply call [delete()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#delete) and specify the S3 `key`.  Example:
+To delete an object from S3, simply call [deleteFile()](https://github.com/jhuckaby/s3-api/blob/main/docs/API.md#deletefile) and specify the S3 `key`.  Example:
 
 ```js
 try {
 	// delete a remote object
-	await s3.delete({ key: 's3dir/myfile.gif' });
+	await s3.deleteFile({ key: 's3dir/myfile.gif' });
 }
 catch (err) {
 	// handle error here
@@ -776,7 +776,7 @@ s3 copy s3://my-bucket/users/ s3://my-bucket/newusers/ --recursive
 s3 move s3://my-bucket/users/ s3://my-bucket/newusers/ --recursive
 ```
 
-You can delete single S3 files and entire folder trees using the [delete](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#delete) and [deleteFiles](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#deletefiles) commands (or just add `--recursive` to [delete](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#delete)):
+You can delete single S3 files and entire folder trees using the [deleteFile](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#deletefile) and [deleteFiles](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#deletefiles) commands (or just add `--recursive` to [deleteFile](https://github.com/jhuckaby/s3-api/blob/main/docs/CLI.md#deletefile)):
 
 ```sh
 # Delete S3 file
