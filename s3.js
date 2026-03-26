@@ -652,7 +652,7 @@ class S3API {
 		let params = Tools.mergeHashes( this.params || {}, opts.params || {} );
 		params.Bucket = opts.bucket;
 		params.Prefix = this.prefix + opts.remotePath;
-		params.MaxKeys = opts.max ? Math.min(opts.max, 1000) : 1000;
+		params.MaxKeys = 1000;
 		
 		this.logDebug(8, "Listing S3 files with prefix: " + params.Prefix, opts);
 		let tracker = this.perf ? this.perf.begin('s3_list') : null;
