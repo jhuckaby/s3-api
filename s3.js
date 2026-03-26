@@ -614,6 +614,7 @@ class S3API {
 	 * @param {(number|string)} [opts.newer] - Only include files newer than the specified epoch time or relative time.
 	 * @param {boolean} [opts.emptyFolders=false] - Optionally include 0-byte empty folder markers.
 	 * @param {number} [opts.max] - Optionally set a maximum number of files to download.
+	 * @param {string} [opts.sort] - Optionally sort results by: newest, oldest, largest, smallest.
 	 * @param {string} [opts.bucket] - Optionally specify the S3 bucket where the folders reside.
 	 * @returns {Promise<ListResponse>} - A promise that resolves to a custom object.
 	 */
@@ -637,6 +638,8 @@ class S3API {
 		if (!opts.remotePath) opts.remotePath = '';
 		if (!opts.filespec) opts.filespec = /.*/;
 		if (!opts.filter) opts.filter = function() { return true; };
+		if (opts.max && ((typeof(opts.max) != 'number') || (opts.max < 0))) return callback( new Error("The 'max' property must be a positive number.") );
+		if (opts.sort && !String(opts.sort).match(/^(newest|oldest|largest|smallest)$/)) return callback( new Error("Invalid sort method: " + opts.sort) );
 		
 		if (opts.older) {
 			// convert older to filter func with mtime
@@ -669,8 +672,6 @@ class S3API {
 						let items = data.Contents || [];
 						
 						items.forEach( function(item) {
-							if (done) return;
-							
 							let key = item.Key;
 							let bytes = item.Size;
 							let mtime = item.LastModified.getTime() / 1000;
@@ -684,9 +685,6 @@ class S3API {
 								total_bytes += bytes;
 								files.push(file);
 							}
-							
-							// check max files here
-							if (opts.max && (files.length >= opts.max)) done = true;
 						}); // foreach item
 						
 						// check for end of key list
@@ -706,6 +704,24 @@ class S3API {
 			function(err) {
 				if (tracker) tracker.end();
 				if (err) return process.nextTick( function() { callback(err, null, null); });
+				
+				// apply optional sort
+				if (opts.sort) {
+					switch (opts.sort) {
+						case 'newest': Tools.sortBy( files, 'mtime', { type: 'number', dir: -1 } ); break;
+						case 'oldest': Tools.sortBy( files, 'mtime', { type: 'number', dir: 1 } ); break;
+						case 'largest': Tools.sortBy( files, 'size', { type: 'number', dir: -1 } ); break;
+						case 'smallest': Tools.sortBy( files, 'size', { type: 'number', dir: 1 } ); break;
+					}
+				}
+				
+				// apply optional max
+				if (opts.max && (files.length > opts.max)) {
+					while (files.length > opts.max) {
+						var file = files.pop();
+						total_bytes -= file.size;
+					}
+				}
 				
 				self.logDebug(9, "S3 listing complete (" + Tools.commify(files.length) + " objects, " + Tools.getTextFromBytes(total_bytes) + ")", {
 					prefix: params.Prefix,
@@ -1260,6 +1276,7 @@ class S3API {
 	 * @param {boolean} [opts.decompress=false] - Optionally decompress the files during download.
 	 * @param {RegExp} [opts.strip] - Optionally strip a suffix from every destination filename.
 	 * @param {number} [opts.max] - Optionally set a maximum number of files to download.
+	 * @param {string} [opts.sort] - Optionally sort results by: newest, oldest, largest, smallest.
 	 * @param {Function} [opts.progress] - A function to receive progress udpates.
 	 * @param {boolean} [opts.dry=false] - Optionally do a dry run (take no action).
 	 * @returns {Promise<ListResponse>} - A promise that resolves to a custom object.
@@ -1320,6 +1337,7 @@ class S3API {
 	 * @param {(number|string)} [opts.newer] - Only include files newer than the specified epoch time or relative time.
 	 * @param {number} [opts.threads=1] - Optionally increase the threads to improve performance.
 	 * @param {number} [opts.max] - Optionally set a maximum number of files to download.
+	 * @param {string} [opts.sort] - Optionally sort results by: newest, oldest, largest, smallest.
 	 * @param {string} [opts.bucket] - Optionally specify the S3 bucket where the folders reside.
 	 * @param {Function} [opts.progress] - A function to receive progress udpates.
 	 * @param {boolean} [opts.dry=false] - Optionally do a dry run (take no action).
