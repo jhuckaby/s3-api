@@ -375,6 +375,7 @@ The `list` command accepts the following optional arguments:
 | `older` | Mixed | Optionally filter files to those modified before a specified date, or delta time.  Dates should be parsable by JavaScript, delta times can be "7 days", etc. |
 | `larger` | Mixed | Optionally filter files to those larger than a specified size, which can be raw bytes, or a string such as "50K", "500MB", "32GB", "1TB", etc. |
 | `smaller` | Mixed | Optionally filter files to those smaller than a specified size, which can be raw bytes, or a string such as "50K", "500MB", "32GB", "1TB", etc. |
+| `max` | Integer | Optionally set a maximum limit on the number of files to list. |
 | `json` | Boolean | Optionally return the results in JSON format, rather than an ASCII table.  Combine with `--quiet` for pure JSON output. |
 | `csv` | Boolean | Optionally return the results in CSV format, rather than an ASCII table.  Combine with `--quiet` for pure CSV output. |
 
@@ -697,6 +698,7 @@ The `deleteFiles` command accepts the following optional arguments:
 | `larger` | Mixed | Optionally filter files to those larger than a specified size, which can be raw bytes, or a string such as "50K", "500MB", "32GB", "1TB", etc. |
 | `smaller` | Mixed | Optionally filter files to those smaller than a specified size, which can be raw bytes, or a string such as "50K", "500MB", "32GB", "1TB", etc. |
 | `threads` | Integer | Optionally increase concurrency to improve performance.  Defaults to `1` thread. |
+| `max` | Integer | Optionally set a maximum limit on the number of files to delete. |
 
 **Notes:**
 
@@ -813,6 +815,7 @@ The `downloadFiles` command accepts the following optional arguments:
 | `threads` | Integer | Optionally increase concurrency to improve performance.  Defaults to `1` thread. |
 | `decompress` | Boolean | Automatically decompress all files using gunzip during download.  Disabled by default. |
 | `strip` | RegExp | Optionally strip a suffix from every destination filename, e.g. `\.gz$` to strip the `.gz` suffix off of compressed files. |
+| `max` | Integer | Optionally set a maximum limit on the number of files to download. |
 | `delete` | Boolean | Optionally delete the S3 files after download is complete. |
 
 **Notes:**

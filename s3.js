@@ -613,6 +613,7 @@ class S3API {
 	 * @param {(number|string)} [opts.older] - Only include files older than the specified epoch time or relative time.
 	 * @param {(number|string)} [opts.newer] - Only include files newer than the specified epoch time or relative time.
 	 * @param {boolean} [opts.emptyFolders=false] - Optionally include 0-byte empty folder markers.
+	 * @param {number} [opts.max] - Optionally set a maximum number of files to download.
 	 * @param {string} [opts.bucket] - Optionally specify the S3 bucket where the folders reside.
 	 * @returns {Promise<ListResponse>} - A promise that resolves to a custom object.
 	 */
@@ -651,7 +652,7 @@ class S3API {
 		let params = Tools.mergeHashes( this.params || {}, opts.params || {} );
 		params.Bucket = opts.bucket;
 		params.Prefix = this.prefix + opts.remotePath;
-		params.MaxKeys = 1000;
+		params.MaxKeys = opts.max ? Math.min(opts.max, 1000) : 1000;
 		
 		this.logDebug(8, "Listing S3 files with prefix: " + params.Prefix, opts);
 		let tracker = this.perf ? this.perf.begin('s3_list') : null;
@@ -668,6 +669,8 @@ class S3API {
 						let items = data.Contents || [];
 						
 						items.forEach( function(item) {
+							if (done) return;
+							
 							let key = item.Key;
 							let bytes = item.Size;
 							let mtime = item.LastModified.getTime() / 1000;
@@ -681,11 +684,14 @@ class S3API {
 								total_bytes += bytes;
 								files.push(file);
 							}
+							
+							// check max files here
+							if (opts.max && (files.length >= opts.max)) done = true;
 						}); // foreach item
 						
 						// check for end of key list
 						if (!data.IsTruncated || !items.length) done = true;
-						else {
+						else if (!done) {
 							// advance to next chunk
 							params.StartAfter = items[ items.length - 1 ].Key;
 						}
@@ -1253,6 +1259,7 @@ class S3API {
 	 * @param {string} [opts.bucket] - Optionally override the S3 bucket.
 	 * @param {boolean} [opts.decompress=false] - Optionally decompress the files during download.
 	 * @param {RegExp} [opts.strip] - Optionally strip a suffix from every destination filename.
+	 * @param {number} [opts.max] - Optionally set a maximum number of files to download.
 	 * @param {Function} [opts.progress] - A function to receive progress udpates.
 	 * @param {boolean} [opts.dry=false] - Optionally do a dry run (take no action).
 	 * @returns {Promise<ListResponse>} - A promise that resolves to a custom object.
@@ -1312,6 +1319,7 @@ class S3API {
 	 * @param {(number|string)} [opts.older] - Only include files older than the specified epoch time or relative time.
 	 * @param {(number|string)} [opts.newer] - Only include files newer than the specified epoch time or relative time.
 	 * @param {number} [opts.threads=1] - Optionally increase the threads to improve performance.
+	 * @param {number} [opts.max] - Optionally set a maximum number of files to download.
 	 * @param {string} [opts.bucket] - Optionally specify the S3 bucket where the folders reside.
 	 * @param {Function} [opts.progress] - A function to receive progress udpates.
 	 * @param {boolean} [opts.dry=false] - Optionally do a dry run (take no action).

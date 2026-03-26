@@ -309,6 +309,8 @@ The method accepts an object containing the following properties:
 | `filespec` | RegExp | Optionally filter the result files using a regular expression, matched on the filenames. |
 | `filter` | Function | Optionally provide a filter function to select which files to return. |
 | `older` | Number | Optionally filter the S3 files based on their modification date, i.e. they must be older than the specified number of seconds.  You can also specify a string here, e.g. "7 days". |
+| `newer` | Number | Optionally filter the S3 files based on their modification date, i.e. they must be newer than the specified number of seconds.  You can also specify a string here, e.g. "7 days". |
+| `max` | Integer | Optionally set a maximum limit on the number of files to list. |
 | `bucket` | String | Optionally specify the S3 bucket where the records are stored.  This is usually set in the class constructor. |
 
 The response object will contain the following keys, which you can destruct into variables as shown above:
@@ -824,6 +826,7 @@ The method accepts an object containing the following properties:
 | `progress` | Function | Optionally provide a progress function, which will be called periodically during the operation.  See below for usage. |
 | `older` | Mixed | Optionally filter the S3 files based on their modification date, i.e. must be older than the specified number of seconds.  You can also specify a string here, e.g. "7 days". |
 | `threads` | Integer | Optionally increase the threads to improve performance at the cost of additional HTTP connections. |
+| `max` | Integer | Optionally set a maximum limit on the number of files to delete. |
 | `bucket` | String | Optionally specify the S3 bucket where the record is stored.  This is usually set in the class constructor. |
 
 The response object will contain the following keys, which you can destruct into variables as shown above:
@@ -1103,6 +1106,7 @@ The method accepts an object containing the following properties:
 | `threads` | Integer | Optionally increase the threads to improve performance.  Defaults to `1`. |
 | `decompress` | Boolean | Set this to `true` to automatically decompress all files during download.  Defaults to `false`.  See [Compression](https://github.com/jhuckaby/s3-api/blob/main/README.md#compression). |
 | `strip` | RegExp | Optionally strip a suffix from every destination filename, e.g. `/\.gz$/` to strip the `.gz` suffix off compressed files. |
+| `max` | Integer | Optionally set a maximum limit on the number of files to download. |
 | `progress` | Function | Optionally provide a progress function, which will be called periodically during the operation.  See below for usage. |
 | `delete` | Boolean | Optionally delete the S3 files after download is complete. |
 | `bucket` | String | Optionally specify the S3 bucket where the files are stored.  This is usually set in the class constructor. |
