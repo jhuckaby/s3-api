@@ -577,6 +577,8 @@ The method accepts an object containing the following properties:
 | `filter` | Function | Optionally provide a function to decide whether or not to include each file.  See below for usage. |
 | `progress` | Function | Optionally provide a progress function, which will be called periodically during the operation.  See below for usage. |
 | `threads` | Integer | Optionally increase the threads to improve performance.  Defaults to `1`. |
+| `max` | Integer | Optionally set a maximum limit on the number of files to copy. |
+| `sort` | String | Optionally sort the files by `newest`, `oldest`, `largest` or `smallest` first.  Useful when combined with `max`. |
 | `sourceBucket` | String | Optionally override the S3 bucket used to read the source files.  This defaults to the class `bucket` parameter. |
 | `bucket` | String | Optionally specify the S3 bucket where the files are copied to.  This is usually set in the class constructor. |
 | `params` | Object | Optionally specify parameters to the S3 API, for e.g. ACL and Storage Class.  See [Custom S3 Params](https://github.com/jhuckaby/s3-api/blob/main/README.md#custom-s3-params). |
@@ -714,6 +716,8 @@ The method accepts an object containing the following properties:
 | `filter` | Function | Optionally provide a function to decide whether or not to include each file.  See below for usage. |
 | `progress` | Function | Optionally provide a progress function, which will be called periodically during the operation.  See below for usage. |
 | `threads` | Integer | Optionally increase the threads to improve performance.  Defaults to `1`. |
+| `max` | Integer | Optionally set a maximum limit on the number of files to move. |
+| `sort` | String | Optionally sort the files by `newest`, `oldest`, `largest` or `smallest` first.  Useful when combined with `max`. |
 | `sourceBucket` | String | Optionally override the S3 bucket used to read the source files.  This defaults to the class `bucket` parameter. |
 | `bucket` | String | Optionally specify the S3 bucket where the files are moved to.  This is usually set in the class constructor. |
 | `params` | Object | Optionally specify parameters to the S3 API, for e.g. ACL and Storage Class.  See [Custom S3 Params](https://github.com/jhuckaby/s3-api/blob/main/README.md#custom-s3-params). |

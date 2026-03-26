@@ -553,6 +553,8 @@ The `copyFiles` command accepts the following optional arguments:
 | `larger` | Mixed | Optionally filter files to those larger than a specified size, which can be raw bytes, or a string such as "50K", "500MB", "32GB", "1TB", etc. |
 | `smaller` | Mixed | Optionally filter files to those smaller than a specified size, which can be raw bytes, or a string such as "50K", "500MB", "32GB", "1TB", etc. |
 | `threads` | Integer | Optionally increase concurrency to improve performance.  Defaults to `1` thread. |
+| `max` | Integer | Optionally set a maximum limit on the number of files to copy. |
+| `sort` | String | Optionally sort the files by `newest`, `oldest`, `largest` or `smallest` first.  Useful when combined with `max`. |
 | `params` | Object | Optionally pass custom parameters directly to the AWS API for the destination files.  See [S3 Params](#s3-params). |
 
 **Notes:**
@@ -648,6 +650,8 @@ The `moveFiles` command accepts the following optional arguments:
 | `larger` | Mixed | Optionally filter files to those larger than a specified size, which can be raw bytes, or a string such as "50K", "500MB", "32GB", "1TB", etc. |
 | `smaller` | Mixed | Optionally filter files to those smaller than a specified size, which can be raw bytes, or a string such as "50K", "500MB", "32GB", "1TB", etc. |
 | `threads` | Integer | Optionally increase concurrency to improve performance.  Defaults to `1` thread. |
+| `max` | Integer | Optionally set a maximum limit on the number of files to move. |
+| `sort` | String | Optionally sort the files by `newest`, `oldest`, `largest` or `smallest` first.  Useful when combined with `max`. |
 | `params` | Object | Optionally pass custom parameters directly to the AWS API for the destination files.  See [S3 Params](#s3-params). |
 
 **Notes:**

@@ -396,6 +396,8 @@ class S3API {
 	 * @param {string} [opts.bucket] - Optionally override the S3 bucket.
 	 * @param {Function} [opts.progress] - A function to receive progress udpates.
 	 * @param {boolean} [opts.dry=false] - Optionally do a dry run (take no action).
+	 * @param {number} [opts.max] - Optionally set a maximum number of files to download.
+	 * @param {string} [opts.sort] - Optionally sort results by: newest, oldest, largest, smallest.
 	 * @returns {Promise<ListResponse>} - A promise that resolves to a custom object.
 	 */
 	copyFiles(opts, callback) {
@@ -478,6 +480,8 @@ class S3API {
 	 * @param {string} [opts.bucket] - Optionally override the S3 bucket.
 	 * @param {Function} [opts.progress] - A function to receive progress udpates.
 	 * @param {boolean} [opts.dry=false] - Optionally do a dry run (take no action).
+	 * @param {number} [opts.max] - Optionally set a maximum number of files to move.
+	 * @param {string} [opts.sort] - Optionally sort results by: newest, oldest, largest, smallest.
 	 * @returns {Promise<ListResponse>} - A promise that resolves to a custom object.
 	 */
 	moveFiles(opts, callback) {
